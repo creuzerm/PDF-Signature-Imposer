@@ -123,14 +123,21 @@
         const infoPaddedPages = document.getElementById('info-padded-pages');
         const statusMessage = document.getElementById('status-message');
         const errorMessage = document.getElementById('error-message');
+        const separateCoverFlyleafCheckbox = document.getElementById('separate-cover-flyleaf');
 
         // --- PDF Library ---
         const { PDFDocument } = PDFLib;
         let uploadedFile = null;
+        let currentOriginalPageCount = 0; // Stores the page count of the original uploaded PDF
 
         // --- Event Listeners ---
         pdfUploadInput.addEventListener('change', handleFileSelect);
         processBtn.addEventListener('click', processPDF);
+        separateCoverFlyleafCheckbox.addEventListener('change', () => {
+            if (currentOriginalPageCount > 0) {
+                updateSignatureOptions(currentOriginalPageCount);
+            }
+        });
 
         /**
          * Updates the signature dropdown with dynamic info and auto-selects the best option.
@@ -185,7 +192,17 @@
          */
         async function handleFileSelect(event) {
             const files = event.target.files;
-            if (files.length === 0) return;
+            currentOriginalPageCount = 0; // Reset on new file selection or clearing selection
+
+            if (files.length === 0) {
+                fileNameDisplay.textContent = 'Click to browse or drag & drop';
+                fileNameDisplay.classList.remove('text-indigo-700', 'dark:text-indigo-300', 'font-semibold', 'text-red-600', 'dark:text-red-400');
+                fileNameDisplay.classList.add('text-gray-500', 'dark:text-gray-400');
+                resetStatus();
+                uploadedFile = null;
+                // Potentially disable process button or clear further UI elements if needed
+                return;
+            }
 
             uploadedFile = files[0];
             fileNameDisplay.textContent = 'Analyzing PDF...';
@@ -197,6 +214,7 @@
                 const existingPdfBytes = await uploadedFile.arrayBuffer();
                 const pdfDoc = await PDFDocument.load(existingPdfBytes);
                 const originalPageCount = pdfDoc.getPageCount();
+                currentOriginalPageCount = originalPageCount; // Store original page count
 
                 updateSignatureOptions(originalPageCount);
 
@@ -210,6 +228,7 @@
                 errorMessage.textContent = 'Invalid or corrupt PDF file.';
                 statusArea.classList.remove('hidden');
                 uploadedFile = null; // Clear the invalid file
+                currentOriginalPageCount = 0; // Reset on error
             }
         }
 
