@@ -71,7 +71,11 @@ To make the process as simple as possible, the tool includes several user-experi
 2.  Open the file in a modern web browser (like Chrome, Firefox, or Edge).
 3.  Click the upload area to select your PDF.
 4.  The tool will analyze the file and pre-select the most efficient signature size. You can keep this selection or choose another from the dynamic dropdown.
-5.  **Optional: Add Flyleaves**: If you want a blank page immediately after your front cover and immediately before your back cover, check the "Separate cover with flyleaf" checkbox. This is useful for perfect-bound books or when you want to protect the first and last printed pages. The tool will logically insert these two blank pages into the document sequence *before* calculating signatures and imposition. This means your original Page 1 becomes the front cover, followed by a blank flyleaf, then your original Page 2 onwards, then another blank flyleaf, and finally your original last page as the back cover. All subsequent calculations for padding and signatures will use this new, longer sequence.
+*   Your original Page 1 becomes the front cover.
+*   A blank flyleaf is inserted immediately after.
+*   Your original Page 2 onwards follow.
+*   Another blank flyleaf is inserted immediately before your original last page.
+*   Your original last page becomes the back cover.
 6.  Click the **Repaginate & Download** button.
 7.  A new file named `imposed_yourfilename.pdf` will be downloaded.
 8.  Open this new file and print it using your printer's standard **"booklet"** setting.
