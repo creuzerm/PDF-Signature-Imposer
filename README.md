@@ -19,7 +19,7 @@ This tool solves that problem.
 
 ## The Solution: What does this tool do?
 
-This application creates a new, repaginated PDF that "tricks" the printer's simple booklet mode. It shuffles the pages of your entire document in a precise order. When you print this new, shuffled PDF using the standard booklet setting, the printer performs its regular imposition. The final printed output will be perfectly arranged for you to collate and fold into multiple, separate signatures.
+This application creates a new, repaginated PDF that "tricks" the printer's simple booklet mode. It shuffles the pages of your entire document in a precise order. When you print this new, shuffled PDF using the standard booklet setting, the printer performs its regular imposition. The final printed output will be perfectly arranged for you to collate and fold into multiple, separate signatures. It also offers an option to automatically insert blank flyleaves inside the front and back covers for a more professional finish.
 
 ### A Concrete Example
 
@@ -71,7 +71,12 @@ To make the process as simple as possible, the tool includes several user-experi
 2.  Open the file in a modern web browser (like Chrome, Firefox, or Edge).
 3.  Click the upload area to select your PDF.
 4.  The tool will analyze the file and pre-select the most efficient signature size. You can keep this selection or choose another from the dynamic dropdown.
-5.  Click the **Repaginate & Download** button.
-6.  A new file named `imposed_yourfilename.pdf` will be downloaded.
-7.  Open this new file and print it using your printer's standard **"booklet"** setting.
-8.  Collect the printed sheets, fold them, and you will have a set of signatures ready for binding.
+*   Your original Page 1 becomes the front cover.
+*   A blank flyleaf is inserted immediately after.
+*   Your original Page 2 onwards follow.
+*   Another blank flyleaf is inserted immediately before your original last page.
+*   Your original last page becomes the back cover.
+6.  Click the **Repaginate & Download** button.
+7.  A new file named `imposed_yourfilename.pdf` will be downloaded.
+8.  Open this new file and print it using your printer's standard **"booklet"** setting.
+9.  Collect the printed sheets, fold them, and you will have a set of signatures ready for binding.

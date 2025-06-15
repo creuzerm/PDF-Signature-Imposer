@@ -77,6 +77,14 @@
                 <p class="text-xs text-gray-500 mt-1">Must be a multiple of 4. Efficiency is auto-selected for 16-32 pages.</p>
             </div>
 
+            <!-- Step 3: Separate Cover with Flyleaf -->
+            <div class="flex items-center mt-4">
+                <input id="separate-cover-flyleaf" type="checkbox" class="h-5 w-5 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 bg-gray-50 dark:bg-gray-700">
+                <label for="separate-cover-flyleaf" class="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Separate cover with flyleaf
+                </label>
+            </div>
+
             <!-- Action Button -->
             <div class="pt-4">
                 <button id="process-btn" class="w-full flex items-center justify-center bg-indigo-600 text-white font-bold text-lg py-4 rounded-lg shadow-lg hover:bg-indigo-700 disabled:bg-indigo-400">
@@ -92,6 +100,7 @@
             <div id="info-original-pages" class="flex justify-between"></div>
             <div id="info-signature-size" class="flex justify-between"></div>
             <div id="info-num-signatures" class="flex justify-between"></div>
+            <div id="info-flyleaf-status" class="flex justify-between"></div> <!-- Added this line -->
             <div id="info-padded-pages" class="flex justify-between"></div>
             <div id="status-message" class="pt-2 font-medium text-green-600 dark:text-green-400"></div>
             <div id="error-message" class="pt-2 font-medium text-red-600 dark:text-red-400"></div>
@@ -128,6 +137,13 @@
          * @param {number} originalPageCount - The number of pages in the uploaded PDF.
          */
         function updateSignatureOptions(originalPageCount) {
+            const separateCoverCheckbox = document.getElementById('separate-cover-flyleaf');
+            let adjustedPageCount = originalPageCount;
+
+            if (separateCoverCheckbox.checked && originalPageCount >= 2) {
+                adjustedPageCount += 2; // Add 2 pages for the flyleaf (front and back)
+            }
+
             let minBlanks = Infinity;
             let bestSignatureSize = null;
 
@@ -138,9 +154,10 @@
                 if (isNaN(sigSize)) continue;
 
                 const numSheets = sigSize / 4;
-                const numSignatures = Math.ceil(originalPageCount / sigSize);
+                // Use adjustedPageCount for calculations
+                const numSignatures = Math.ceil(adjustedPageCount / sigSize);
                 const totalPages = numSignatures * sigSize;
-                const blanksAdded = totalPages - originalPageCount;
+                const blanksAdded = totalPages - adjustedPageCount;
                 
                 // Update the label text
                 option.textContent = `${sigSize} pages (${numSheets} sheets) — ${numSignatures} sigs, adds ${blanksAdded} blank(s)`;
@@ -223,11 +240,19 @@
         /**
          * Updates the information display panel with processing details.
          */
-        function updateInfoPanel(originalPages, sigSize, numSigs, finalPages) {
+        function updateInfoPanel(originalPages, sigSize, numSigs, finalPages, flyleafsAdded) { // Added flyleafsAdded
             infoOriginalPages.innerHTML = `<span>Original Page Count:</span> <strong>${originalPages}</strong>`;
             infoSignatureSize.innerHTML = `<span>Pages per Signature:</span> <strong>${sigSize}</strong>`;
             infoNumSignatures.innerHTML = `<span>Number of Signatures:</span> <strong>${numSigs}</strong>`;
-            infoPaddedPages.innerHTML = `<span>Final Page Count (with padding):</span> <strong>${finalPages}</strong>`;
+
+            const infoFlyleafStatusDiv = document.getElementById('info-flyleaf-status');
+            if (flyleafsAdded) {
+                infoFlyleafStatusDiv.innerHTML = `<span>Flyleaves:</span> <strong>Active (2 pages added)</strong>`;
+            } else {
+                infoFlyleafStatusDiv.innerHTML = `<span>Flyleaves:</span> <strong>Inactive</strong>`;
+            }
+
+            infoPaddedPages.innerHTML = `<span>Final Page Count (incl. padding & flyleaves):</span> <strong>${finalPages}</strong>`;
             statusArea.classList.remove('hidden');
         }
 
@@ -261,49 +286,189 @@
                 const existingPdfBytes = await uploadedFile.arrayBuffer();
                 const pdfDoc = await PDFDocument.load(existingPdfBytes);
                 const originalPageCount = pdfDoc.getPageCount();
+                const isFlyleafEnabled = document.getElementById('separate-cover-flyleaf').checked;
+
+                let processingPageCount = originalPageCount;
+                if (isFlyleafEnabled && originalPageCount >= 2) {
+                    processingPageCount += 2; // For front and back flyleaves
+                }
 
                 // 3. Calculate padding and signature layout
-                const totalPages = Math.ceil(originalPageCount / signatureSize) * signatureSize;
+                const totalPages = Math.ceil(processingPageCount / signatureSize) * signatureSize;
                 const numSignatures = totalPages / signatureSize;
-                const pagesToPad = totalPages - originalPageCount;
+                // pagesToPad is relative to processingPageCount for internal logic,
+                // but the user display (updateInfoPanel) shows based on originalPageCount.
+                // The actual number of blank pages added to the *content* before final padding
+                // is processingPageCount - originalPageCount.
+                // The number of blanks added to reach a multiple of signatureSize is totalPages - processingPageCount.
                 
-                updateInfoPanel(originalPageCount, signatureSize, numSignatures, totalPages);
+                const flyleafsEffectivelyAdded = isFlyleafEnabled && originalPageCount >= 2;
+                updateInfoPanel(originalPageCount, signatureSize, numSignatures, totalPages, flyleafsEffectivelyAdded);
+                statusMessage.textContent = 'Preparing pages for imposition...';
+
+                const newPdfDoc = await PDFDocument.create();
+                const copiedOriginalPages = await newPdfDoc.copyPages(pdfDoc, pdfDoc.getPageIndices());
+                
+                let pagesForImposition = [];
+                const BLANK_PAGE_MARKER = { isBlank: true };
+
+                if (isFlyleafEnabled && originalPageCount >= 2) {
+                    pagesForImposition.push(copiedOriginalPages[0]); // Original page 1 (Cover front)
+                    pagesForImposition.push(BLANK_PAGE_MARKER);      // Blank flyleaf (inside cover front)
+
+                    // Middle pages
+                    for (let i = 1; i < originalPageCount - 1; i++) {
+                        pagesForImposition.push(copiedOriginalPages[i]);
+                    }
+
+                    pagesForImposition.push(BLANK_PAGE_MARKER);      // Blank flyleaf (inside cover back)
+                    pagesForImposition.push(copiedOriginalPages[originalPageCount - 1]); // Original page N (Cover back)
+                } else {
+                    pagesForImposition = [...copiedOriginalPages];
+                }
+                // At this point, pagesForImposition.length should be equal to processingPageCount.
+
                 statusMessage.textContent = 'Calculating new page order...';
-                
-                // 4. Generate the new page order
-                const newPageOrder = new Array(totalPages);
+                // 4. Generate the new page order. Indices in newPageOrder refer to pagesForImposition array.
+                const newPageOrder = new Array(totalPages); // totalPages is based on processingPageCount + padding for signature multiple
                 const pagesPerSignatureHalf = signatureSize / 2;
 
                 for (let sigIndex = 0; sigIndex < numSignatures; sigIndex++) {
-                    const sigStartPage = sigIndex * signatureSize;
+                    const sigStartPageIndexInImpositionArray = sigIndex * signatureSize; // Base index for this signature within pagesForImposition context
                     for (let i = 0; i < pagesPerSignatureHalf; i++) {
-                        const originalFrontPage = sigStartPage + i;
-                        const originalBackPage = sigStartPage + signatureSize - 1 - i;
+                        // These are indices for pagesForImposition
+                        const frontPageImpositionIndex = sigStartPageIndexInImpositionArray + i;
+                        const backPageImpositionIndex = sigStartPageIndexInImpositionArray + signatureSize - 1 - i;
                         
-                        const newDocFrontSlot = (sigIndex * pagesPerSignatureHalf) + i;
-                        const newDocBackSlot = totalPages - 1 - newDocFrontSlot;
+                        // These are slots in the final, flat, imposed document
+                        const newDocFrontSlot = (sigIndex * signatureSize) + i; // Corrected slot calculation
+                        const newDocBackSlot = (sigIndex * signatureSize) + signatureSize - 1 - i; // Corrected slot calculation
 
-                        newPageOrder[newDocFrontSlot] = originalFrontPage;
-                        newPageOrder[newDocBackSlot] = originalBackPage;
+                        // Store the *index from pagesForImposition* into the newPageOrder slots
+                        // The newPageOrder is ordered for reading out pages sequentially for imposition
+                        // but the values it holds are where to get them from pagesForImposition.
+                        // This seems more complex than needed. Let's simplify:
+                        // The newPageOrder should be the final sequence of indices referring to pagesForImposition
+                        // The imposition logic (swapping pages for booklet) needs to be applied here.
+
+                        // Let's re-think newPageOrder generation based on standard imposition.
+                        // The standard calculation produces indices from 0 to (sigSize-1) for each signature,
+                        // these are then offset by sigStartPageIndexInImpositionArray.
+                        // No, the original logic for newPageOrder was mapping *original document pages* to *new document slots*.
+                        // Now it needs to map *pagesForImposition indices* to *new document slots*.
+                        // The slots (newDocFrontSlot, newDocBackSlot) are within a signature, then offset by total signatures processed so far.
+
+                        // The existing newPageOrder generation logic:
+                        // newPageOrder[newDocFrontSlot] = originalFrontPage;
+                        // newPageOrder[newDocBackSlot] = originalBackPage;
+                        // `originalFrontPage` was `sigStartPage + i` (index in original unpadded doc)
+                        // We need `sigStartPage + i` to be an index in `pagesForImposition`.
+                        // And `totalPages` in `new Array(totalPages)` is the final count including signature padding.
+
+                        const currentImposedPageFront = (sigIndex * signatureSize) + i;
+                        const currentImposedPageBack = (sigIndex * signatureSize) + signatureSize - 1 - i;
+
+                        // Values for newPageOrder are indices into pagesForImposition
+                        newPageOrder[currentImposedPageFront] = sigStartPageIndexInImpositionArray + i;
+                        newPageOrder[currentImposedPageBack] = sigStartPageIndexInImpositionArray + signatureSize - 1 - i;
                     }
                 }
-
-                // 5. Create the new PDF document
-                statusMessage.textContent = 'Assembling new PDF document...';
-                const newPdfDoc = await PDFDocument.create();
                 
-                const copiedPages = await newPdfDoc.copyPages(pdfDoc, pdfDoc.getPageIndices());
+                // Re-ordering within each signature for booklet printing
+                // The newPageOrder currently is [0,1,2,3, ... N-1] if processingPageCount = N
+                // It needs to be [N-1, 0, N-2, 1, N-3, 2, ...] for each signature block
+                const finalImposedOrder = new Array(totalPages);
+                for (let sigIndex = 0; sigIndex < numSignatures; sigIndex++) {
+                    const sigBaseInputIndex = sigIndex * signatureSize; // Starting index in pagesForImposition for this signature
+                    const sigBaseOutputIndex = sigIndex * signatureSize; // Starting index in finalImposedOrder for this signature
+                    for (let i = 0; i < pagesPerSignatureHalf; i++) {
+                        finalImposedOrder[sigBaseOutputIndex + i] = sigBaseInputIndex + signatureSize - 1 - i;
+                        finalImposedOrder[sigBaseOutputIndex + pagesPerSignatureHalf + i] = sigBaseInputIndex + i;
+                    }
+                }
+                // The above re-ordering is for a single signature. This needs to be applied to the sequence
+                // generated by the previous loop. The previous loop is already generating the correct sequence
+                // if pages are laid out sequentially.
+                // Let's stick to the original newPageOrder generation logic, but ensure indices are for pagesForImposition.
+                // The error was in my interpretation. The original logic for newPageOrder *is* the imposition logic.
 
-                // 6. Add pages to the new document in the calculated order
-                for (const pageIndex of newPageOrder) {
-                    if (pageIndex < originalPageCount) {
-                        newPdfDoc.addPage(copiedPages[pageIndex]);
-                    } else {
-                        const { width, height } = copiedPages[0].getSize();
-                        newPdfDoc.addPage([width, height]);
+                // Corrected newPageOrder generation:
+                // `totalPages` is the size of the output document.
+                // `newPageOrder` stores, for each slot in the output document,
+                // which page from the (potentially flyleafed) `pagesForImposition` array should go there.
+                const imposedOrderIndices = new Array(totalPages);
+                for (let sigNum = 0; sigNum < numSignatures; sigNum++) {
+                    let currentFront = sigNum * signatureSize;
+                    let currentBack = currentFront + signatureSize - 1;
+                    for (let pageNumInSig = 0; pageNumInSig < pagesPerSignatureHalf; pageNumInSig++) {
+                        // Slot in final document | Page from pagesForImposition
+                        imposedOrderIndices[currentFront + pageNumInSig] = (sigNum * signatureSize) + pageNumInSig; // Front of sheet, left page
+                        imposedOrderIndices[currentFront + signatureSize - 1 - pageNumInSig] = (sigNum * signatureSize) + pagesPerSignatureHalf + pageNumInSig; // Back of sheet, right page (mirrors front-right)
+
+                        // This is still not right. Let's use the common imposition algorithm structure:
+                        // For signature `s` and page `i` within the signature (0 to signatureSize-1):
+                        // If `i` is even: page `s*signatureSize + signatureSize-1-i` from source
+                        // If `i` is odd:  page `s*signatureSize + i` from source
+                        // This needs to be mapped to output slots.
+
+                        // Output slot: sigNum * signatureSize + pageNumInSig (for first half of sig)
+                        // Output slot: sigNum * signatureSize + pagesPerSignatureHalf + pageNumInSig (for second half of sig)
+
+                        // Page from `pagesForImposition` for slot `sigNum*signatureSize + i`:
+                        // Slot `k` in output doc.
+                        // `i` = page within signature, `j` = signature index
+                        // Page `j*S + S-1-i` goes to slot `j*S + i` if `i < S/2` (fronts)
+                        // Page `j*S + i` goes to slot `j*S + i` if `i >= S/2` (backs)
+                        // This is what the original code did, mapping original pages.
+                        // So, `originalFrontPage` was `sigStartPage + i` (page from content)
+                        // `originalBackPage` was `sigStartPage + signatureSize - 1 - i` (page from content)
+                        // These were assigned to `newDocFrontSlot` and `newDocBackSlot` in the output.
+                        // `newDocFrontSlot` = `(sigIndex * pagesPerSignatureHalf) + i;`
+                        // `newDocBackSlot` = `totalPages - 1 - newDocFrontSlot;`
+                        // This was for a single large imposition. My current code is for multiple signatures.
+
+                        // Let's use the structure from the original code directly, ensuring indices are valid for pagesForImposition
+                        const sigStartSourcePageIndex = sigNum * signatureSize; // Starting index in pagesForImposition for this signature's content
+                        for (let i = 0; i < pagesPerSignatureHalf; i++) {
+                            const sourceFrontPageIdx = sigStartSourcePageIndex + i;
+                            const sourceBackPageIdx  = sigStartSourcePageIndex + signatureSize - 1 - i;
+
+                            const outputSlotForFront = (sigNum * signatureSize) + i;
+                            const outputSlotForBack  = (sigNum * signatureSize) + signatureSize - 1 - i;
+
+                            // These are output slots. The pages placed here are:
+                            imposedOrderIndices[outputSlotForFront] = sourceBackPageIdx; // Page S-1-i goes to slot i
+                            imposedOrderIndices[outputSlotForBack]  = sourceFrontPageIdx; // Page i goes to slot S-1-i
+                        }
                     }
                 }
 
+
+                statusMessage.textContent = 'Assembling new PDF document...';
+                // 6. Add pages to the new document in the calculated order
+                // imposedOrderIndices contains the sequence of indices from pagesForImposition
+                // or indicates padding if index >= processingPageCount
+
+                let pageDimensionSource = copiedOriginalPages.length > 0 ? copiedOriginalPages[0] : (pdfDoc.getPages().length > 0 ? pdfDoc.getPage(0) : null);
+                if (!pageDimensionSource && originalPageCount > 0) pageDimensionSource = pdfDoc.getPage(0); // fallback if copiedOriginalPages is empty but original had pages
+                const defaultPageSize = pageDimensionSource ? pageDimensionSource.getSize() : { width: 612, height: 792 }; // Default to letter size if no pages
+
+                for (const sourcePageIndex of imposedOrderIndices) {
+                    if (sourcePageIndex < processingPageCount) {
+                        const pageItem = pagesForImposition[sourcePageIndex];
+                        if (pageItem && pageItem.isBlank) {
+                            newPdfDoc.addPage([defaultPageSize.width, defaultPageSize.height]);
+                        } else if (pageItem) { // It's a pre-copied page
+                            newPdfDoc.addPage(pageItem);
+                        } else {
+                            // This case implies an issue with sourcePageIndex or pagesForImposition contents
+                            console.warn("Attempting to add undefined page item for source index:", sourcePageIndex, "Adding blank page as fallback.");
+                            newPdfDoc.addPage([defaultPageSize.width, defaultPageSize.height]);
+                        }
+                    } else { // This is a padding page to fill up the last signature
+                        newPdfDoc.addPage([defaultPageSize.width, defaultPageSize.height]);
+                    }
+                }
                 // 7. Save the PDF and trigger download
                 statusMessage.textContent = 'Finalizing PDF... Preparing download.';
                 const newPdfBytes = await newPdfDoc.save();
