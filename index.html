@@ -200,7 +200,7 @@
                 fileNameDisplay.classList.add('text-gray-500', 'dark:text-gray-400');
                 resetStatus();
                 uploadedFile = null;
-                // Potentially disable process button or clear further UI elements if needed
+                processBtn.disabled = true; // Disable button as no file is selected
                 return;
             }
 
