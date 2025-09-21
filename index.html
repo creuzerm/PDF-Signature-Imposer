@@ -348,119 +348,38 @@
                 // At this point, pagesForImposition.length should be equal to processingPageCount.
 
                 statusMessage.textContent = 'Calculating new page order...';
-                // 4. Generate the new page order. Indices in newPageOrder refer to pagesForImposition array.
-                const newPageOrder = new Array(totalPages); // totalPages is based on processingPageCount + padding for signature multiple
+
+                // 4. Generate the new page order using the correct multi-signature imposition algorithm.
+                // The goal is to create a sequence that, when printed in booklet mode, produces separate signatures.
+                // The logic is to group the first half of each signature at the front of the document,
+                // and the second half of each signature (in reverse signature order) at the back of the document.
                 const pagesPerSignatureHalf = signatureSize / 2;
+                const frontHalfChunks = [];
+                const backHalfChunks = [];
 
-                for (let sigIndex = 0; sigIndex < numSignatures; sigIndex++) {
-                    const sigStartPageIndexInImpositionArray = sigIndex * signatureSize; // Base index for this signature within pagesForImposition context
-                    for (let i = 0; i < pagesPerSignatureHalf; i++) {
-                        // These are indices for pagesForImposition
-                        const frontPageImpositionIndex = sigStartPageIndexInImpositionArray + i;
-                        const backPageImpositionIndex = sigStartPageIndexInImpositionArray + signatureSize - 1 - i;
-                        
-                        // These are slots in the final, flat, imposed document
-                        const newDocFrontSlot = (sigIndex * signatureSize) + i; // Corrected slot calculation
-                        const newDocBackSlot = (sigIndex * signatureSize) + signatureSize - 1 - i; // Corrected slot calculation
-
-                        // Store the *index from pagesForImposition* into the newPageOrder slots
-                        // The newPageOrder is ordered for reading out pages sequentially for imposition
-                        // but the values it holds are where to get them from pagesForImposition.
-                        // This seems more complex than needed. Let's simplify:
-                        // The newPageOrder should be the final sequence of indices referring to pagesForImposition
-                        // The imposition logic (swapping pages for booklet) needs to be applied here.
-
-                        // Let's re-think newPageOrder generation based on standard imposition.
-                        // The standard calculation produces indices from 0 to (sigSize-1) for each signature,
-                        // these are then offset by sigStartPageIndexInImpositionArray.
-                        // No, the original logic for newPageOrder was mapping *original document pages* to *new document slots*.
-                        // Now it needs to map *pagesForImposition indices* to *new document slots*.
-                        // The slots (newDocFrontSlot, newDocBackSlot) are within a signature, then offset by total signatures processed so far.
-
-                        // The existing newPageOrder generation logic:
-                        // newPageOrder[newDocFrontSlot] = originalFrontPage;
-                        // newPageOrder[newDocBackSlot] = originalBackPage;
-                        // `originalFrontPage` was `sigStartPage + i` (index in original unpadded doc)
-                        // We need `sigStartPage + i` to be an index in `pagesForImposition`.
-                        // And `totalPages` in `new Array(totalPages)` is the final count including signature padding.
-
-                        const currentImposedPageFront = (sigIndex * signatureSize) + i;
-                        const currentImposedPageBack = (sigIndex * signatureSize) + signatureSize - 1 - i;
-
-                        // Values for newPageOrder are indices into pagesForImposition
-                        newPageOrder[currentImposedPageFront] = sigStartPageIndexInImpositionArray + i;
-                        newPageOrder[currentImposedPageBack] = sigStartPageIndexInImpositionArray + signatureSize - 1 - i;
+                for (let i = 0; i < numSignatures; i++) {
+                    const sigStartIndex = i * signatureSize;
+                    const frontChunk = [];
+                    const backChunk = [];
+                    for (let j = 0; j < pagesPerSignatureHalf; j++) {
+                        frontChunk.push(sigStartIndex + j);
+                        backChunk.push(sigStartIndex + pagesPerSignatureHalf + j);
                     }
+                    frontHalfChunks.push(frontChunk);
+                    backHalfChunks.push(backChunk);
                 }
-                
-                // Re-ordering within each signature for booklet printing
-                // The newPageOrder currently is [0,1,2,3, ... N-1] if processingPageCount = N
-                // It needs to be [N-1, 0, N-2, 1, N-3, 2, ...] for each signature block
-                const finalImposedOrder = new Array(totalPages);
-                for (let sigIndex = 0; sigIndex < numSignatures; sigIndex++) {
-                    const sigBaseInputIndex = sigIndex * signatureSize; // Starting index in pagesForImposition for this signature
-                    const sigBaseOutputIndex = sigIndex * signatureSize; // Starting index in finalImposedOrder for this signature
-                    for (let i = 0; i < pagesPerSignatureHalf; i++) {
-                        finalImposedOrder[sigBaseOutputIndex + i] = sigBaseInputIndex + signatureSize - 1 - i;
-                        finalImposedOrder[sigBaseOutputIndex + pagesPerSignatureHalf + i] = sigBaseInputIndex + i;
-                    }
-                }
-                // The above re-ordering is for a single signature. This needs to be applied to the sequence
-                // generated by the previous loop. The previous loop is already generating the correct sequence
-                // if pages are laid out sequentially.
-                // Let's stick to the original newPageOrder generation logic, but ensure indices are for pagesForImposition.
-                // The error was in my interpretation. The original logic for newPageOrder *is* the imposition logic.
 
-                // Corrected newPageOrder generation:
-                // `totalPages` is the size of the output document.
-                // `newPageOrder` stores, for each slot in the output document,
-                // which page from the (potentially flyleafed) `pagesForImposition` array should go there.
-                const imposedOrderIndices = new Array(totalPages);
-                for (let sigNum = 0; sigNum < numSignatures; sigNum++) {
-                    let currentFront = sigNum * signatureSize;
-                    let currentBack = currentFront + signatureSize - 1;
-                    for (let pageNumInSig = 0; pageNumInSig < pagesPerSignatureHalf; pageNumInSig++) {
-                        // Slot in final document | Page from pagesForImposition
-                        imposedOrderIndices[currentFront + pageNumInSig] = (sigNum * signatureSize) + pageNumInSig; // Front of sheet, left page
-                        imposedOrderIndices[currentFront + signatureSize - 1 - pageNumInSig] = (sigNum * signatureSize) + pagesPerSignatureHalf + pageNumInSig; // Back of sheet, right page (mirrors front-right)
+                const reversedBackHalfChunks = backHalfChunks.reverse();
 
-                        // This is still not right. Let's use the common imposition algorithm structure:
-                        // For signature `s` and page `i` within the signature (0 to signatureSize-1):
-                        // If `i` is even: page `s*signatureSize + signatureSize-1-i` from source
-                        // If `i` is odd:  page `s*signatureSize + i` from source
-                        // This needs to be mapped to output slots.
+                const imposedOrderIndices = [
+                    ...frontHalfChunks.flat(),
+                    ...reversedBackHalfChunks.flat()
+                ];
 
-                        // Output slot: sigNum * signatureSize + pageNumInSig (for first half of sig)
-                        // Output slot: sigNum * signatureSize + pagesPerSignatureHalf + pageNumInSig (for second half of sig)
-
-                        // Page from `pagesForImposition` for slot `sigNum*signatureSize + i`:
-                        // Slot `k` in output doc.
-                        // `i` = page within signature, `j` = signature index
-                        // Page `j*S + S-1-i` goes to slot `j*S + i` if `i < S/2` (fronts)
-                        // Page `j*S + i` goes to slot `j*S + i` if `i >= S/2` (backs)
-                        // This is what the original code did, mapping original pages.
-                        // So, `originalFrontPage` was `sigStartPage + i` (page from content)
-                        // `originalBackPage` was `sigStartPage + signatureSize - 1 - i` (page from content)
-                        // These were assigned to `newDocFrontSlot` and `newDocBackSlot` in the output.
-                        // `newDocFrontSlot` = `(sigIndex * pagesPerSignatureHalf) + i;`
-                        // `newDocBackSlot` = `totalPages - 1 - newDocFrontSlot;`
-                        // This was for a single large imposition. My current code is for multiple signatures.
-
-                        // Let's use the structure from the original code directly, ensuring indices are valid for pagesForImposition
-                        const sigStartSourcePageIndex = sigNum * signatureSize; // Starting index in pagesForImposition for this signature's content
-                        for (let i = 0; i < pagesPerSignatureHalf; i++) {
-                            const sourceFrontPageIdx = sigStartSourcePageIndex + i;
-                            const sourceBackPageIdx  = sigStartSourcePageIndex + signatureSize - 1 - i;
-
-                            const outputSlotForFront = (sigNum * signatureSize) + i;
-                            const outputSlotForBack  = (sigNum * signatureSize) + signatureSize - 1 - i;
-
-                            // These are output slots. The pages placed here are:
-                            imposedOrderIndices[outputSlotForFront] = sourceBackPageIdx; // Page S-1-i goes to slot i
-                            imposedOrderIndices[outputSlotForBack]  = sourceFrontPageIdx; // Page i goes to slot S-1-i
-                        }
-                    }
-                }
+                // The imposedOrderIndices now contains the correct sequence of page indices
+                // from the `pagesForImposition` array. The final document will have `totalPages`,
+                // so we need to handle padding for the last signature if `imposedOrderIndices` is shorter.
+                // The indices themselves point to valid pages or are placeholders for padding.
 
 
                 statusMessage.textContent = 'Assembling new PDF document...';

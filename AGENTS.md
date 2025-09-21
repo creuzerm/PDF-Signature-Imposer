@@ -45,3 +45,34 @@ The most important function is `processPDF()`. This function is responsible for:
 5.  Creating the new PDF and triggering the download.
 
 When working on this project, pay close attention to the `processPDF` function and ensure that any modifications result in a correctly imposed PDF. Refer to the `README.md` for the principles of booklet imposition if you are unsure.
+
+## Imposition Algorithm
+
+The core task of this tool is to reorder the pages of a source document (after handling flyleaves and padding) into a new sequence. This new sequence is designed to "trick" a standard printer's booklet-making feature into producing multiple, separate signatures instead of one large one.
+
+The algorithm works as follows:
+
+1.  **Divide into Signatures**: The source pages (a list of page objects, potentially including added flyleaves and blank padding pages) are first conceptually divided into signatures of a given size (e.g., 16 pages per signature).
+
+2.  **Split Signatures in Half**: Each signature is split into a "front half" and a "back half". For a 16-page signature, pages 1-8 are the front half and pages 9-16 are the back half.
+
+3.  **Group Halves**: The algorithm creates two collections:
+    *   A list of all the "front half" chunks.
+    *   A list of all the "back half" chunks.
+
+4.  **Reverse the Back Half Order**: The list of "back half" chunks is reversed. For example, if there are two signatures, the back half of Signature 2 is now placed before the back half of Signature 1.
+
+5.  **Concatenate and Flatten**: The final page order is created by:
+    *   First, taking the list of "front half" chunks and flattening it into a single sequence of pages.
+    *   Then, taking the *reversed* list of "back half" chunks and flattening it into a single sequence of pages.
+    *   Appending the second sequence to the first.
+
+### Example: 32-page document, 16-page signatures
+
+*   **Signature 1**: Pages 1-16. Front half: 1-8. Back half: 9-16.
+*   **Signature 2**: Pages 17-32. Front half: 17-24. Back half: 25-32.
+
+The final imposed order will be:
+`[1-8]`, `[17-24]`, `[25-32]`, `[9-16]` (flattened into a single list).
+
+This new sequence is then used to build the final PDF. When this new PDF is printed with a booklet setting, the printer will correctly assemble the sheets for Signature 1 and Signature 2 separately.
