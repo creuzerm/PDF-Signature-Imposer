@@ -49,6 +49,33 @@ Now, when you print *this new document* in booklet mode, the printer does its st
 
 The result is two separate stacks of paper that fold perfectly into two distinct 8-page signatures.
 
+#### Signature Order Patterns
+
+To make the printer treat a single job as multiple stacked signatures, the tool "wraps" the signatures around each other in the output file. The first signature occupies the very beginning and very end of the file, the second signature sits just inside that, and so on.
+
+Here are examples of the page sequences generated for larger signature sizes:
+
+16 Pages per Signature (4 Sheets)
+
+*Assumes a 32-page document (2 Signatures)*
+* Signature 1 (Pages 1-16): Occupies the outermost slots.
+* Signature 2 (Pages 17-32): Occupies the innermost slots.
+* Output Sequence: 1-8, 17-24, 25-32, 9-16
+
+20 Pages per Signature (5 Sheets)
+
+*Assumes a 40-page document (2 Signatures)*
+* Signature 1 (Pages 1-20): Occupies the outermost slots.
+* Signature 2 (Pages 21-40): Occupies the innermost slots.
+* Output Sequence: 1-10, 21-30, 31-40, 11-20
+
+24 Pages per Signature (6 Sheets)
+
+*Assumes a 48-page document (2 Signatures)*
+* Signature 1 (Pages 1-24): Occupies the outermost slots.
+* Signature 2 (Pages 25-48): Occupies the innermost slots.
+* Output Sequence: 1-12, 25-36, 37-48, 13-24
+
 ## How It Works
 
 ### The Technology
