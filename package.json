@@ -1,0 +1,24 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "This is a single-file, browser-based web application that repaginates a PDF to allow for correct multi-signature booklet printing. It intelligently reorders the pages of a source PDF so that when printed using a standard printer's \"booklet\" mode, the output can be folded into separate, correctly ordered signatures for bookbinding.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/creuzerm/PDF-Signature-Imposer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/creuzerm/PDF-Signature-Imposer/issues"
+  },
+  "homepage": "https://github.com/creuzerm/PDF-Signature-Imposer#readme",
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
+  }
+}
