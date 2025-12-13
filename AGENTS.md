@@ -41,3 +41,21 @@ For a block of 16 source pages (1-16), the output order must be:
 4.  Apply the **Imposition Mapping** (Step 2) to this slice.
 5.  Add the reordered pages to the new PDF.
 6.  Repeat for the next signature.
+
+## Automated Testing
+
+### Test Script: `test_imposition.js`
+This project includes a comprehensive test script `test_imposition.js` designed for a Node.js environment to verify the imposition logic.
+
+**What it does:**
+1.  **Generates** a temporary 100-page "Source PDF" with clear page numbers.
+2.  **Runs** the corrected imposition logic (fixing sequential signature and mapping bugs).
+3.  **Inspects** the logic by verifying the mapping array matches the mathematically correct booklet order for a 16-page signature.
+
+**Prerequisites:**
+*   Node.js environment
+*   `pdf-lib` installed (`npm install pdf-lib`)
+
+**Requirement:**
+*   Any changes to the imposition logic MUST be verified by running this test script.
+*   Run `node test_imposition.js` and ensure it prints `✅ ALL TESTS PASSED`.
