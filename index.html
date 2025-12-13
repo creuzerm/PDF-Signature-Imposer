@@ -321,34 +321,24 @@
                 statusMessage.textContent = 'Calculating new page order...';
                 
                 // 4. Generate the new page order.
-                // This logic creates a "wrapped" structure so the printer's single booklet job
-                // produces separate stacked signatures.
-                const imposedOrderIndices = new Array(totalPages);
-                const pagesPerSignatureHalf = signatureSize / 2;
+                // Process signatures sequentially. Within each signature, reorder pages
+                // to form printer spreads (imposition).
+                const imposedOrderIndices = [];
+                const sheetsPerSignature = signatureSize / 4;
 
                 for (let sigIndex = 0; sigIndex < numSignatures; sigIndex++) {
-                    const sigStartPage = sigIndex * signatureSize; // Start index in source content for this sig
+                    const baseIndex = sigIndex * signatureSize;
 
-                    // To make separate signatures come out of a single booklet print job, 
-                    // we must "wrap" the signatures around each other.
-                    // Sig 1 (First) goes to the very beginning and very end of the file (Outer).
-                    // Sig 2 (Second) goes inside that (Next Outer).
-                    // Sig N (Last) goes in the center (Inner).
-                    
-                    // Front half of this signature goes to the 'Front' block of the output file
-                    const outputStartIndexFront = sigIndex * pagesPerSignatureHalf;
-                    
-                    // Back half of this signature goes to the 'Back' block of the output file
-                    const outputStartIndexBack = totalPages - ((sigIndex + 1) * pagesPerSignatureHalf);
+                    for (let i = 0; i < sheetsPerSignature; i++) {
+                        // Sheet i+1 Front
+                        // Left page (highest number in this sheet's scope), Right page (lowest number)
+                        imposedOrderIndices.push(baseIndex + (signatureSize - 1 - (2 * i)));
+                        imposedOrderIndices.push(baseIndex + (0 + (2 * i)));
 
-                    for (let i = 0; i < pagesPerSignatureHalf; i++) {
-                        // 1. The first half of the signature
-                        // Source: sigStartPage + i
-                        imposedOrderIndices[outputStartIndexFront + i] = sigStartPage + i;
-
-                        // 2. The second half of the signature
-                        // Source: sigStartPage + half + i
-                        imposedOrderIndices[outputStartIndexBack + i] = sigStartPage + pagesPerSignatureHalf + i;
+                        // Sheet i+1 Back
+                        // Left page (low + 1), Right page (high - 1)
+                        imposedOrderIndices.push(baseIndex + (1 + (2 * i)));
+                        imposedOrderIndices.push(baseIndex + (signatureSize - 2 - (2 * i)));
                     }
                 }
 
