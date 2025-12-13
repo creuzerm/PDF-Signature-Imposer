@@ -1,5 +1,6 @@
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const fs = require('fs');
+const { generateImpositionMap } = require('./src/imposition_logic');
 
 /**
  * CONFIGURATION
@@ -36,7 +37,7 @@ async function createSourcePDF(pageCount) {
 }
 
 /**
- * 2. IMPOSITION LOGIC (The Fixed Algorithm)
+ * 2. IMPOSITION LOGIC (Using Shared Module)
  */
 async function imposePDF(pdfBytes, signatureSize) {
     const srcDoc = await PDFDocument.load(pdfBytes);
@@ -44,39 +45,17 @@ async function imposePDF(pdfBytes, signatureSize) {
 
     const srcPageCount = srcDoc.getPageCount();
 
-    // Calculate total pages including padding (Must be multiple of signatureSize)
+    // Use shared logic
+    const impositionMap = generateImpositionMap(srcPageCount, signatureSize);
+
+    // Derived stats for logging
     const totalSignatures = Math.ceil(srcPageCount / signatureSize);
-    const totalImposedPages = totalSignatures * signatureSize;
 
     console.log(`[Logic] Input Pages: ${srcPageCount}`);
     console.log(`[Logic] Total Signatures: ${totalSignatures}`);
-    console.log(`[Logic] Final Page Count (padded): ${totalImposedPages}`);
+    console.log(`[Logic] Final Page Count (padded): ${impositionMap.length}`);
 
     const copiedPages = await newDoc.copyPages(srcDoc, srcDoc.getPageIndices());
-    const impositionMap = [];
-
-    // --- CORE LOOP ---
-    for (let sigIndex = 0; sigIndex < totalSignatures; sigIndex++) {
-        const sigStartPage = sigIndex * signatureSize;
-        const sheetsInSig = signatureSize / 4;
-
-        // Process each sheet in the signature (Sheet 1..4)
-        for (let sheet = 0; sheet < sheetsInSig; sheet++) {
-            // Standard Booklet Imposition Mapping
-            // Front: High, Low
-            // Back:  Low+1, High-1
-
-            const lowLocal = sheet * 2;
-            const highLocal = signatureSize - 1 - (sheet * 2);
-
-            const p1 = sigStartPage + highLocal; // Left (Front)
-            const p2 = sigStartPage + lowLocal;  // Right (Front)
-            const p3 = sigStartPage + lowLocal + 1; // Left (Back)
-            const p4 = sigStartPage + highLocal - 1; // Right (Back)
-
-            impositionMap.push(p1, p2, p3, p4);
-        }
-    }
 
     // --- BUILD PDF ---
     for (const sourceIndex of impositionMap) {

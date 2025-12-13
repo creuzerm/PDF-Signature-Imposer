@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- pdf-lib: A library for creating and modifying PDF documents -->
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
+    <!-- Core Imposition Logic (Shared) -->
+    <script src="src/imposition_logic.js"></script>
     <style>
         /* Custom styles for a better look and feel */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -323,24 +325,8 @@
                 // 4. Generate the new page order.
                 // Process signatures sequentially. Within each signature, reorder pages
                 // to form printer spreads (imposition).
-                const imposedOrderIndices = [];
-                const sheetsPerSignature = signatureSize / 4;
-
-                for (let sigIndex = 0; sigIndex < numSignatures; sigIndex++) {
-                    const baseIndex = sigIndex * signatureSize;
-
-                    for (let i = 0; i < sheetsPerSignature; i++) {
-                        // Sheet i+1 Front
-                        // Left page (highest number in this sheet's scope), Right page (lowest number)
-                        imposedOrderIndices.push(baseIndex + (signatureSize - 1 - (2 * i)));
-                        imposedOrderIndices.push(baseIndex + (0 + (2 * i)));
-
-                        // Sheet i+1 Back
-                        // Left page (low + 1), Right page (high - 1)
-                        imposedOrderIndices.push(baseIndex + (1 + (2 * i)));
-                        imposedOrderIndices.push(baseIndex + (signatureSize - 2 - (2 * i)));
-                    }
-                }
+                // Use shared logic from src/imposition_logic.js
+                const imposedOrderIndices = ImpositionLogic.generateImpositionMap(processingPageCount, signatureSize);
 
                 statusMessage.textContent = 'Assembling new PDF document...';
                 
