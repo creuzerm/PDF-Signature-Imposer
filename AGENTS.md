@@ -44,18 +44,21 @@ For a block of 16 source pages (1-16), the output order must be:
 
 ## Automated Testing
 
-### Test Script: `test_imposition.js`
-This project includes a comprehensive test script `test_imposition.js` designed for a Node.js environment to verify the imposition logic.
+### Automated Testing
 
-**What it does:**
-1.  **Generates** a temporary 100-page "Source PDF" with clear page numbers.
-2.  **Runs** the corrected imposition logic (fixing sequential signature and mapping bugs).
-3.  **Inspects** the logic by verifying the mapping array matches the mathematically correct booklet order for a 16-page signature.
+#### 1. Core Imposition Logic (`test_imposition.js`)
+This script verifies the sequential signature processing and booklet page ordering.
+*   **Generates** a temporary 100-page "Source PDF".
+*   **Runs** the imposition logic.
+*   **Inspects** the mapping array.
+*   **Command:** `node test_imposition.js`
+*   **Requirement:** Must pass `✅ ALL TESTS PASSED` after any changes to `src/imposition_logic.js`.
+
+#### 2. 2-Up Layout Logic (`test_2up.js`)
+This script verifies the creation of 2-up landscape spreads.
+*   **Command:** `node test_2up.js`
+*   **Critical Implementation Note:** When creating blank pages (for padding or flyleaves) that will be processed by the 2-up logic, you **must** draw something on them (e.g., invisible text). `pdf-lib` will throw a "Can't embed page with missing Contents" error if attempting to embed a completely empty page.
 
 **Prerequisites:**
 *   Node.js environment
 *   `pdf-lib` installed (`npm install pdf-lib`)
-
-**Requirement:**
-*   Any changes to the imposition logic MUST be verified by running this test script.
-*   Run `node test_imposition.js` and ensure it prints `✅ ALL TESTS PASSED`.

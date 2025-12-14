@@ -312,6 +312,7 @@
                 statusMessage.textContent = 'Preparing pages for imposition...';
 
                 const newPdfDoc = await PDFDocument.create();
+                const font = await newPdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
                 const copiedOriginalPages = await newPdfDoc.copyPages(pdfDoc, pdfDoc.getPageIndices());
                 
                 let pagesForImposition = [];
@@ -348,7 +349,9 @@
                     if (sourcePageIndex < processingPageCount) {
                         const pageItem = pagesForImposition[sourcePageIndex];
                         if (pageItem && pageItem.isBlank) {
-                            newPdfDoc.addPage([defaultPageSize.width, defaultPageSize.height]);
+                            const page = newPdfDoc.addPage([defaultPageSize.width, defaultPageSize.height]);
+                            // Draw invisible text to ensure page has content
+                            page.drawText(' ', { font, size: 1, x: 0, y: 0, opacity: 0 });
                         } else if (pageItem) { 
                             newPdfDoc.addPage(pageItem);
                         } else {
@@ -357,7 +360,9 @@
                         }
                     } else { 
                         // Padding page
-                        newPdfDoc.addPage([defaultPageSize.width, defaultPageSize.height]);
+                        const page = newPdfDoc.addPage([defaultPageSize.width, defaultPageSize.height]);
+                        // Draw invisible text to ensure page has content
+                        page.drawText(' ', { font, size: 1, x: 0, y: 0, opacity: 0 });
                     }
                 }
 
