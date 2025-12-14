@@ -1,2 +1,4 @@
 node_modules/
-test_output_100pages.pdf
+dist/
+test_output_*.pdf
+*.log
