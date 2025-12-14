@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- pdf-lib: A library for creating and modifying PDF documents -->
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
+    <!-- JSZip: A library for creating zip files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <!-- Core Imposition Logic (Shared) -->
     <script src="src/imposition_logic.js"></script>
     <style>
@@ -79,7 +81,16 @@
                 <p class="text-xs text-gray-500 mt-1">Must be a multiple of 4. Efficiency is auto-selected for 16-32 pages.</p>
             </div>
 
-            <!-- Step 3: Separate Cover with Flyleaf -->
+            <!-- Step 3: Output Splitting -->
+            <div>
+                <label for="batch-size" class="block text-lg font-semibold mb-2">3. Output Splitting</label>
+                <select id="batch-size" class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" disabled>
+                    <option value="0">Single File (All pages)</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">For printers with limited tray capacity. Defines maximum pages per file.</p>
+            </div>
+
+            <!-- Step 4: Separate Cover with Flyleaf -->
             <div class="flex items-center mt-4">
                 <input id="separate-cover-flyleaf" type="checkbox" class="h-5 w-5 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 bg-gray-50 dark:bg-gray-700">
                 <label for="separate-cover-flyleaf" class="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -115,6 +126,7 @@
         const pdfUploadInput = document.getElementById('pdf-upload');
         const fileNameDisplay = document.getElementById('file-name-display');
         const signatureSizeSelect = document.getElementById('signature-size');
+        const batchSizeSelect = document.getElementById('batch-size');
         const processBtn = document.getElementById('process-btn');
         const btnText = document.getElementById('btn-text');
         const btnSpinner = document.getElementById('btn-spinner');
@@ -135,9 +147,17 @@
         // --- Event Listeners ---
         pdfUploadInput.addEventListener('change', handleFileSelect);
         processBtn.addEventListener('click', processPDF);
+
+        signatureSizeSelect.addEventListener('change', () => {
+            if (currentOriginalPageCount > 0) {
+                updateBatchOptions(currentOriginalPageCount);
+            }
+        });
+
         separateCoverFlyleafCheckbox.addEventListener('change', () => {
             if (currentOriginalPageCount > 0) {
                 updateSignatureOptions(currentOriginalPageCount);
+                updateBatchOptions(currentOriginalPageCount);
             }
         });
 
@@ -182,6 +202,45 @@
         }
 
         /**
+         * Updates the batch options dropdown based on signature size and total pages.
+         */
+        function updateBatchOptions(originalPageCount) {
+             const signatureSize = parseInt(signatureSizeSelect.value, 10);
+             if (isNaN(signatureSize) || originalPageCount <= 0) {
+                 batchSizeSelect.disabled = true;
+                 return;
+             }
+
+             const separateCoverCheckbox = document.getElementById('separate-cover-flyleaf');
+             let adjustedPageCount = originalPageCount;
+             if (separateCoverCheckbox.checked && originalPageCount >= 2) {
+                 adjustedPageCount += 2;
+             }
+             const totalSignatures = Math.ceil(adjustedPageCount / signatureSize);
+
+             const configs = ImpositionLogic.getBatchConfigs(signatureSize, totalSignatures);
+
+             // Clear existing options
+             batchSizeSelect.innerHTML = '';
+
+             // Add Default "Single File"
+             const defaultOption = document.createElement('option');
+             defaultOption.value = "0";
+             defaultOption.textContent = "Single File (All pages)";
+             batchSizeSelect.appendChild(defaultOption);
+
+             // Add calculated options
+             configs.forEach(config => {
+                 const option = document.createElement('option');
+                 option.value = config.sigsPerBatch;
+                 option.textContent = config.description;
+                 batchSizeSelect.appendChild(option);
+             });
+
+             batchSizeSelect.disabled = false;
+        }
+
+        /**
          * Handles the file input change event.
          */
         async function handleFileSelect(event) {
@@ -195,6 +254,7 @@
                 resetStatus();
                 uploadedFile = null;
                 processBtn.disabled = true;
+                batchSizeSelect.disabled = true;
                 return;
             }
 
@@ -211,6 +271,7 @@
                 currentOriginalPageCount = originalPageCount; 
 
                 updateSignatureOptions(originalPageCount);
+                updateBatchOptions(originalPageCount);
 
                 fileNameDisplay.textContent = uploadedFile.name; 
 
@@ -302,66 +363,120 @@
                 updateInfoPanel(originalPageCount, signatureSize, numSignatures, totalPages, flyleafsEffectivelyAdded);
                 statusMessage.textContent = 'Preparing pages for imposition...';
 
-                const newPdfDoc = await PDFDocument.create();
-                const copiedOriginalPages = await newPdfDoc.copyPages(pdfDoc, pdfDoc.getPageIndices());
+                // We will access pages from the original document directly
+                const originalPages = pdfDoc.getPages();
+                const pageToIndexMap = new Map();
+                originalPages.forEach((p, i) => pageToIndexMap.set(p, i));
                 
                 let pagesForImposition = [];
                 const BLANK_PAGE_MARKER = { isBlank: true };
 
                 if (isFlyleafEnabled && originalPageCount >= 2) {
-                    pagesForImposition.push(copiedOriginalPages[0]); // Front Cover
+                    pagesForImposition.push(originalPages[0]); // Front Cover
                     pagesForImposition.push(BLANK_PAGE_MARKER);      // Flyleaf
                     for (let i = 1; i < originalPageCount - 1; i++) {
-                        pagesForImposition.push(copiedOriginalPages[i]);
+                        pagesForImposition.push(originalPages[i]);
                     }
                     pagesForImposition.push(BLANK_PAGE_MARKER);      // Flyleaf
-                    pagesForImposition.push(copiedOriginalPages[originalPageCount - 1]); // Back Cover
+                    pagesForImposition.push(originalPages[originalPageCount - 1]); // Back Cover
                 } else {
-                    pagesForImposition = [...copiedOriginalPages];
+                    pagesForImposition = [...originalPages];
                 }
 
                 statusMessage.textContent = 'Calculating new page order...';
                 
                 // 4. Generate the new page order.
-                // Process signatures sequentially. Within each signature, reorder pages
-                // to form printer spreads (imposition).
-                // Use shared logic from src/imposition_logic.js
                 const imposedOrderIndices = ImpositionLogic.generateImpositionMap(processingPageCount, signatureSize);
 
-                statusMessage.textContent = 'Assembling new PDF document...';
+                // 5. Batching / Splitting
+                const batchValue = parseInt(batchSizeSelect.value, 10);
+                const chunks = ImpositionLogic.chunkImpositionMap(imposedOrderIndices, signatureSize, batchValue);
+
+                statusMessage.textContent = chunks.length > 1
+                    ? `Assembling ${chunks.length} PDF files...`
+                    : 'Assembling new PDF document...';
                 
-                // 5. Add pages to the new document in the calculated order
-                let pageDimensionSource = copiedOriginalPages.length > 0 ? copiedOriginalPages[0] : (pdfDoc.getPages().length > 0 ? pdfDoc.getPage(0) : null);
-                if (!pageDimensionSource && originalPageCount > 0) pageDimensionSource = pdfDoc.getPage(0);
+                // Use original pages for dimension reference
+                let pageDimensionSource = originalPages.length > 0 ? originalPages[0] : null;
                 const defaultPageSize = pageDimensionSource ? pageDimensionSource.getSize() : { width: 612, height: 792 };
 
-                for (const sourcePageIndex of imposedOrderIndices) {
-                    if (sourcePageIndex < processingPageCount) {
-                        const pageItem = pagesForImposition[sourcePageIndex];
-                        if (pageItem && pageItem.isBlank) {
-                            newPdfDoc.addPage([defaultPageSize.width, defaultPageSize.height]);
-                        } else if (pageItem) { 
-                            newPdfDoc.addPage(pageItem);
-                        } else {
-                            // Fallback for unexpected error
-                            newPdfDoc.addPage([defaultPageSize.width, defaultPageSize.height]);
-                        }
-                    } else { 
-                        // Padding page
-                        newPdfDoc.addPage([defaultPageSize.width, defaultPageSize.height]);
-                    }
-                }
+                // Helper to build a PDF from a chunk of indices
+                const buildPdfFromIndices = async (indices) => {
+                    const newPdfDoc = await PDFDocument.create();
 
-                // 6. Save the PDF and trigger download
-                statusMessage.textContent = 'Finalizing PDF... Preparing download.';
-                const newPdfBytes = await newPdfDoc.save();
-                const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `imposed_${uploadedFile.name}`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                    const pagesToCopyIndices = [];
+                    const mapping = [];
+
+                    for (let i = 0; i < indices.length; i++) {
+                        const sourceIdx = indices[i];
+                        if (sourceIdx < pagesForImposition.length) {
+                             const pageItem = pagesForImposition[sourceIdx];
+                             if (pageItem && !pageItem.isBlank) {
+                                 const pageIndexInOriginal = pageToIndexMap.get(pageItem);
+                                 if (pageIndexInOriginal !== undefined) {
+                                     pagesToCopyIndices.push(pageIndexInOriginal);
+                                     mapping[i] = { isBlank: false, copyIndex: pagesToCopyIndices.length - 1 };
+                                 } else {
+                                     mapping[i] = { isBlank: true };
+                                 }
+                             } else {
+                                 mapping[i] = { isBlank: true };
+                             }
+                        } else {
+                             // Padding
+                             mapping[i] = { isBlank: true };
+                        }
+                    }
+
+                    let copiedPagesForChunk = [];
+                    if (pagesToCopyIndices.length > 0) {
+                        copiedPagesForChunk = await newPdfDoc.copyPages(pdfDoc, pagesToCopyIndices);
+                    }
+
+                    for (let i = 0; i < indices.length; i++) {
+                        const map = mapping[i];
+                        if (map.isBlank) {
+                             newPdfDoc.addPage([defaultPageSize.width, defaultPageSize.height]);
+                        } else {
+                             newPdfDoc.addPage(copiedPagesForChunk[map.copyIndex]);
+                        }
+                    }
+
+                    return await newPdfDoc.save();
+                };
+
+                // 6. Generate Outputs
+                if (chunks.length === 1) {
+                     const newPdfBytes = await buildPdfFromIndices(chunks[0]);
+
+                     statusMessage.textContent = 'Finalizing PDF... Preparing download.';
+                     const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
+                     const link = document.createElement('a');
+                     link.href = URL.createObjectURL(blob);
+                     link.download = `imposed_${uploadedFile.name}`;
+                     document.body.appendChild(link);
+                     link.click();
+                     document.body.removeChild(link);
+
+                } else {
+                     const zip = new JSZip();
+
+                     for (let i = 0; i < chunks.length; i++) {
+                         statusMessage.textContent = `Processing file ${i + 1} of ${chunks.length}...`;
+                         const chunkBytes = await buildPdfFromIndices(chunks[i]);
+                         zip.file(`imposed_part_${i + 1}.pdf`, chunkBytes);
+                     }
+
+                     statusMessage.textContent = 'Zipping files...';
+                     const zipContent = await zip.generateAsync({type:"blob"});
+
+                     const link = document.createElement('a');
+                     link.href = URL.createObjectURL(zipContent);
+                     link.download = `imposed_${uploadedFile.name}.zip`;
+                     document.body.appendChild(link);
+                     link.click();
+                     document.body.removeChild(link);
+                }
 
                 statusMessage.textContent = 'Success! Your repaginated PDF has been downloaded.';
 
