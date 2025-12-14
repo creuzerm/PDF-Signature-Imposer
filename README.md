@@ -1,6 +1,6 @@
 # PDF Signature Imposer
 
-This is a single-file, browser-based web application that repaginates a PDF to allow for correct multi-signature booklet printing. It intelligently reorders the pages of a source PDF so that when printed using a standard printer's "booklet" mode, the output can be folded into separate, correctly ordered signatures for bookbinding.
+This is a browser-based web application that repaginates a PDF to allow for correct multi-signature booklet printing. It intelligently reorders the pages of a source PDF so that when printed using a standard printer's "booklet" mode, the output can be folded into separate, correctly ordered signatures for bookbinding.
 
 ## Key Concepts
 
@@ -79,36 +79,45 @@ _Assumes a 48-page document (2 Signatures)_
 - Signature 2 (Pages 25-48): Occupies the innermost slots.
 - Output Sequence: 1-12, 25-36, 37-48, 13-24
 
-## How It Works
+## Technology Stack
 
-### The Technology
+- **[Vite](https://vitejs.dev/)**: Build tool and development server.
+- **[pdf-lib](https://pdf-lib.js.org/)**: PDF manipulation library.
+- **[Tailwind CSS](https://tailwindcss.com/)**: Utility-first CSS framework.
+- **[Vitest](https://vitest.dev/)**: Unit testing framework.
 
-The entire application is a **self-contained HTML file**. There is no server-side processing.
+## Getting Started
 
-- **JavaScript** and the **`pdf-lib.js`** library are used to read, manipulate, and create the new PDF directly in your web browser. This means your files are never uploaded anywhere, ensuring privacy and speed.
-- **Tailwind CSS** is used for modern styling.
+### Prerequisites
+- Node.js (v18 or later recommended)
+- npm
 
-### Smart UX Features
+### Installation
+1. Clone the repository.
+2. Run `npm install` to install dependencies.
+
+### Development
+Run `npm run dev` to start the development server.
+```bash
+npm run dev
+```
+
+### Production Build
+To build the application for production:
+```bash
+npm run build
+```
+The build artifacts will be generated in the `dist/` directory.
+
+### Deployment
+This project requires a build step. If deploying to static hosting services (Cloudflare Pages, Vercel, Netlify, GitHub Pages, etc.), configure the following:
+
+- **Build Command:** `npm run build`
+- **Output Directory:** `dist`
+
+## Smart UX Features
 
 To make the process as simple as possible, the tool includes several user-experience enhancements:
 
 1.  **Dynamic Dropdown Labels**: As soon as you upload a PDF, the tool analyzes it. It then updates the "Pages per Signature" dropdown to show you the exact outcome of each choice, including the number of signatures that will be created and how many blank pages will be added to complete the final signature.
 2.  **Optimal Auto-Selection**: The tool automatically selects the most efficient signature size for your document (within a preferred range of 16-32 pages). "Most efficient" is defined as the option that requires adding the fewest blank pages. This gives you a great starting point with minimal paper waste.
-
-## How to Use
-
-1.  Save the `pdf-booklet-imposer.html` file to your computer.
-2.  Open the file in a modern web browser (like Chrome, Firefox, or Edge).
-3.  Click the upload area to select your PDF.
-4.  The tool will analyze the file and pre-select the most efficient signature size. You can keep this selection or choose another from the dynamic dropdown.
-
-- Your original Page 1 becomes the front cover.
-- A blank flyleaf is inserted immediately after.
-- Your original Page 2 onwards follow.
-- Another blank flyleaf is inserted immediately before your original last page.
-- Your original last page becomes the back cover.
-
-6.  Click the **Repaginate & Download** button.
-7.  A new file named `imposed_yourfilename.pdf` will be downloaded.
-8.  Open this new file and print it using your printer's standard **"booklet"** setting.
-9.  Collect the printed sheets, fold them, and you will have a set of signatures ready for binding.
