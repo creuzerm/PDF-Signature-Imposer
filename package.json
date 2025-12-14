@@ -2,7 +2,10 @@
     "name": "app",
     "version": "1.0.0",
     "type": "module",
-    "description": "This is a single-file, browser-based web application that repaginates a PDF to allow for correct multi-signature booklet printing. It intelligently reorders the pages of a source PDF so that when printed using a standard printer's \"booklet\" mode, the output can be folded into separate, correctly ordered signatures for bookbinding.",
+    "description": "This is a browser-based web application that repaginates a PDF to allow for correct multi-signature booklet printing. It intelligently reorders the pages of a source PDF so that when printed using a standard printer's \"booklet\" mode, the output can be folded into separate, correctly ordered signatures for bookbinding.",
+    "engines": {
+        "node": ">=18.0.0"
+    },
     "scripts": {
         "dev": "vite",
         "build": "vite build",

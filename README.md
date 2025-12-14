@@ -110,10 +110,20 @@ npm run build
 The build artifacts will be generated in the `dist/` directory.
 
 ### Deployment
-This project requires a build step. If deploying to static hosting services (Cloudflare Pages, Vercel, Netlify, GitHub Pages, etc.), configure the following:
+This project requires a build step.
 
-- **Build Command:** `npm run build`
-- **Output Directory:** `dist`
+#### Automatic Deployment (Cloudflare Pages)
+When connecting your Git repository to Cloudflare Pages, use the following settings:
+
+1.  **Framework Preset**: Select `Vite`.
+2.  **Build Command**: `npm run build`
+3.  **Build Output Directory**: `dist`
+
+#### Automatic Deployment (GitHub Pages)
+This repository includes a GitHub Action (`.github/workflows/deploy.yml`) that automatically builds and deploys to GitHub Pages on every push to the `main` branch.
+To enable it:
+1. Go to **Settings > Pages** in your GitHub repository.
+2. Under **Build and deployment**, select **Source: GitHub Actions**.
 
 ## Smart UX Features
 
