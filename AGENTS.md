@@ -42,23 +42,28 @@ For a block of 16 source pages (1-16), the output order must be:
 5.  Add the reordered pages to the new PDF.
 6.  Repeat for the next signature.
 
-## Automated Testing
+## Development & Automated Testing
 
-### Automated Testing
+### Setup
+1.  Run `npm install` to install dependencies.
+2.  Run `npm run dev` to start the development server.
+3.  Run `npm run build` to build for production.
 
-#### 1. Core Imposition Logic (`test_imposition.js`)
+### Automated Testing (Vitest)
+
+#### 1. Core Imposition Logic (`src/imposition.test.js`)
 This script verifies the sequential signature processing and booklet page ordering.
-*   **Generates** a temporary 100-page "Source PDF".
+*   **Generates** a temporary source PDF context.
 *   **Runs** the imposition logic.
 *   **Inspects** the mapping array.
-*   **Command:** `node test_imposition.js`
-*   **Requirement:** Must pass `✅ ALL TESTS PASSED` after any changes to `src/imposition_logic.js`.
+*   **Command:** `npm test`
+*   **Requirement:** Must pass `✅ ALL TESTS PASSED` (in Vitest output) after any changes to `src/imposition_logic.js`.
 
-#### 2. 2-Up Layout Logic (`test_2up.js`)
+#### 2. 2-Up Layout Logic (`src/layout.test.js`)
 This script verifies the creation of 2-up landscape spreads.
-*   **Command:** `node test_2up.js`
+*   **Command:** `npm test`
 *   **Critical Implementation Note:** When creating blank pages (for padding or flyleaves) that will be processed by the 2-up logic, you **must** draw something on them (e.g., invisible text). `pdf-lib` will throw a "Can't embed page with missing Contents" error if attempting to embed a completely empty page.
 
 **Prerequisites:**
 *   Node.js environment
-*   `pdf-lib` installed (`npm install pdf-lib`)
+*   `npm install`
