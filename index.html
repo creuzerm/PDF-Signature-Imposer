@@ -16,6 +16,13 @@
         <main
             class="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-10 space-y-8"
         >
+            <!-- Build Warning (Hidden when CSS loads) -->
+            <div id="build-warning" style="background-color: #fee2e2; color: #991b1b; padding: 1rem; border: 1px solid #f87171; border-radius: 0.5rem; text-align: center; font-family: sans-serif;">
+                <h2 style="font-weight: bold; margin-bottom: 0.5rem;">Build Required</h2>
+                <p>This application relies on a build step. You are viewing the raw source code.</p>
+                <p style="margin-top: 0.5rem;">Please run <code>npm run build</code> and serve the <code>dist/</code> directory.</p>
+            </div>
+
             <!-- Header Section -->
             <header class="text-center">
                 <h1
