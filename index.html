@@ -10,6 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
     <!-- Core Imposition Logic (Shared) -->
     <script src="src/imposition_logic.js"></script>
+    <script src="src/layout_logic.js"></script>
     <style>
         /* Custom styles for a better look and feel */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -84,6 +85,14 @@
                 <input id="separate-cover-flyleaf" type="checkbox" class="h-5 w-5 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 bg-gray-50 dark:bg-gray-700">
                 <label for="separate-cover-flyleaf" class="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Separate cover with flyleaf
+                </label>
+            </div>
+
+            <!-- Step 4: 2-up Imposition -->
+            <div class="flex items-center mt-2">
+                <input id="create-2up" type="checkbox" checked class="h-5 w-5 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 bg-gray-50 dark:bg-gray-700">
+                <label for="create-2up" class="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Create 2-up Spreads (for duplex printing)
                 </label>
             </div>
 
@@ -303,6 +312,7 @@
                 statusMessage.textContent = 'Preparing pages for imposition...';
 
                 const newPdfDoc = await PDFDocument.create();
+                const font = await newPdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
                 const copiedOriginalPages = await newPdfDoc.copyPages(pdfDoc, pdfDoc.getPageIndices());
                 
                 let pagesForImposition = [];
@@ -339,7 +349,9 @@
                     if (sourcePageIndex < processingPageCount) {
                         const pageItem = pagesForImposition[sourcePageIndex];
                         if (pageItem && pageItem.isBlank) {
-                            newPdfDoc.addPage([defaultPageSize.width, defaultPageSize.height]);
+                            const page = newPdfDoc.addPage([defaultPageSize.width, defaultPageSize.height]);
+                            // Draw invisible text to ensure page has content
+                            page.drawText(' ', { font, size: 1, x: 0, y: 0, opacity: 0 });
                         } else if (pageItem) { 
                             newPdfDoc.addPage(pageItem);
                         } else {
@@ -348,13 +360,24 @@
                         }
                     } else { 
                         // Padding page
-                        newPdfDoc.addPage([defaultPageSize.width, defaultPageSize.height]);
+                        const page = newPdfDoc.addPage([defaultPageSize.width, defaultPageSize.height]);
+                        // Draw invisible text to ensure page has content
+                        page.drawText(' ', { font, size: 1, x: 0, y: 0, opacity: 0 });
                     }
                 }
 
                 // 6. Save the PDF and trigger download
                 statusMessage.textContent = 'Finalizing PDF... Preparing download.';
-                const newPdfBytes = await newPdfDoc.save();
+                let newPdfBytes = await newPdfDoc.save();
+
+                // Check for 2-up request
+                const is2UpEnabled = document.getElementById('create-2up').checked;
+                if (is2UpEnabled) {
+                    statusMessage.textContent = 'Creating 2-up spreads...';
+                    // Use shared logic from src/layout_logic.js
+                    newPdfBytes = await LayoutLogic.create2UpSpreads(newPdfBytes);
+                }
+
                 const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
