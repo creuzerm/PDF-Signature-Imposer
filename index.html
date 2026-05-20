@@ -59,10 +59,10 @@
             <!-- Step 1: Upload PDF -->
             <div>
                 <label for="pdf-upload" class="block text-lg font-semibold mb-2">1. Upload PDF</label>
-                <label for="pdf-upload" class="file-input-label flex items-center justify-center w-full h-32 px-4 text-center bg-gray-50 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600">
+                <input type="file" id="pdf-upload" class="sr-only peer" accept=".pdf">
+                <label for="pdf-upload" class="file-input-label flex items-center justify-center w-full h-32 px-4 text-center bg-gray-50 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 peer-focus-visible:ring-2 peer-focus-visible:ring-indigo-500 peer-focus-visible:ring-offset-2 peer-focus-visible:border-transparent dark:peer-focus-visible:ring-offset-gray-800">
                     <span id="file-name-display" class="text-gray-500 dark:text-gray-400">Click to browse or drag & drop</span>
                 </label>
-                <input type="file" id="pdf-upload" class="hidden" accept=".pdf">
             </div>
 
             <!-- Step 2: Signature Size -->
@@ -99,7 +99,7 @@
 
             <!-- Action Button -->
             <div class="pt-4">
-                <button id="process-btn" class="w-full flex items-center justify-center bg-indigo-600 text-white font-bold text-lg py-4 rounded-lg shadow-lg hover:bg-indigo-700 disabled:bg-indigo-400">
+                <button id="process-btn" class="w-full flex items-center justify-center bg-indigo-600 text-white font-bold text-lg py-4 rounded-lg shadow-lg hover:bg-indigo-700 disabled:bg-indigo-400 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-offset-gray-800 outline-none">
                     <span id="btn-text">Repaginate & Download</span>
                     <div id="btn-spinner" class="spinner border-2 border-white rounded-full ml-3 hidden"></div>
                 </button>
