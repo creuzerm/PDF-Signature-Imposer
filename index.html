@@ -12,6 +12,7 @@
     <!-- Core Imposition Logic (Shared) -->
     <script src="src/imposition_logic.js"></script>
     <script src="src/layout_logic.js"></script>
+    <script src="src/signature_logic.js"></script>
     <style>
         /* Custom styles for a better look and feel */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -156,38 +157,24 @@
          */
         function updateSignatureOptions(originalPageCount) {
             const separateCoverCheckbox = document.getElementById('separate-cover-flyleaf');
-            let adjustedPageCount = originalPageCount;
-
-            if (separateCoverCheckbox.checked && originalPageCount >= 2) {
-                adjustedPageCount += 2; 
-            }
-
-            let minBlanks = Infinity;
-            let bestSignatureSize = null;
 
             const options = signatureSizeSelect.getElementsByTagName('option');
+            const availableSizes = Array.from(options).map(o => parseInt(o.value, 10)).filter(v => !isNaN(v));
+
+            const result = SignatureLogic.calculateSignatureOptions(originalPageCount, separateCoverCheckbox.checked, availableSizes);
 
             for (const option of options) {
                 const sigSize = parseInt(option.value, 10);
                 if (isNaN(sigSize)) continue;
-
-                const numSheets = sigSize / 4;
-                const numSignatures = Math.ceil(adjustedPageCount / sigSize);
-                const totalPages = numSignatures * sigSize;
-                const blanksAdded = totalPages - adjustedPageCount;
                 
-                option.textContent = `${sigSize} pages (${numSheets} sheets) — ${numSignatures} sigs, adds ${blanksAdded} blank(s)`;
-
-                if (sigSize >= 16 && sigSize <= 32) {
-                    if (blanksAdded < minBlanks) {
-                        minBlanks = blanksAdded;
-                        bestSignatureSize = sigSize;
-                    }
+                const optionData = result.options.find(o => o.sigSize === sigSize);
+                if (optionData) {
+                    option.textContent = optionData.label;
                 }
             }
 
-            if (bestSignatureSize !== null) {
-                signatureSizeSelect.value = bestSignatureSize;
+            if (result.bestSignatureSize !== null) {
+                signatureSizeSelect.value = result.bestSignatureSize;
             }
         }
 
