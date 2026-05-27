@@ -6,10 +6,15 @@
     }
 })(typeof self !== "undefined" ? self : this, function () {
 
-    function calculateSignatureOptions(originalPageCount, isFlyleafEnabled, availableSizes) {
-        let adjustedPageCount = originalPageCount;
+    function calculateSignatureOptions(originalPageCount, isFlyleafEnabled, availableSizes = []) {
+        const pageCount = parseInt(originalPageCount, 10);
+        if (isNaN(pageCount) || pageCount < 0) {
+            return { options: [], bestSignatureSize: null };
+        }
 
-        if (isFlyleafEnabled && originalPageCount >= 2) {
+        let adjustedPageCount = pageCount;
+
+        if (isFlyleafEnabled && pageCount >= 2) {
             adjustedPageCount += 2;
         }
 
@@ -17,7 +22,8 @@
         let bestSignatureSize = null;
         const options = [];
 
-        for (const sigSize of availableSizes) {
+        const sizes = Array.isArray(availableSizes) ? availableSizes : [];
+        for (const sigSize of sizes) {
             if (isNaN(sigSize)) continue;
 
             const numSheets = sigSize / 4;
