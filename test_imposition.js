@@ -84,6 +84,16 @@ async function runTest() {
 
     let allPassed = true;
 
+    // Edge Case Check for Zero Pages
+    console.log(`\n[Inspection] Checking Zero Pages Edge Case...`);
+    const zeroPagesMap = generateImpositionMap(0, SIGNATURE_SIZE);
+    if (zeroPagesMap.length !== 0) {
+        console.error(`❌ FAIL: generateImpositionMap for 0 pages returned length ${zeroPagesMap.length} (Expected: 0).`);
+        allPassed = false;
+    } else {
+        console.log(`✅ Zero pages test passed.`);
+    }
+
     // Verify Every Signature
     for (let s = 0; s < result.totalSignatures; s++) {
         const start = s * SIGNATURE_SIZE;
