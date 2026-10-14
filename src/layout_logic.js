@@ -15,7 +15,10 @@
       // 2. Create a new PDF document
       const outputPdf = await PDFDocument.create();
 
-      // 3. Iterate through pages in pairs (0 & 1, 2 & 3, etc.)
+      // 3. Embed all pages at once
+      const embeddedPages = await outputPdf.embedPdf(sourcePdf, sourcePdf.getPageIndices());
+
+      // 4. Iterate through pages in pairs (0 & 1, 2 & 3, etc.)
       for (let i = 0; i < sourcePages.length; i += 2) {
         // Get the dimensions of the first page in the pair to determine output size
         const { width, height } = sourcePages[i].getSize();
@@ -24,19 +27,17 @@
         // We assume standard portrait input pages.
         const newPage = outputPdf.addPage([width * 2, height]);
 
-        // Embed the first page (Left side)
-        const [embeddedPage1] = await outputPdf.embedPdf(sourcePdf, [i]);
-        newPage.drawPage(embeddedPage1, {
+        // Draw the first embedded page (Left side)
+        newPage.drawPage(embeddedPages[i], {
           x: 0,
           y: 0,
           width: width,
           height: height,
         });
 
-        // Embed the second page (Right side), if it exists
+        // Draw the second embedded page (Right side), if it exists
         if (i + 1 < sourcePages.length) {
-          const [embeddedPage2] = await outputPdf.embedPdf(sourcePdf, [i + 1]);
-          newPage.drawPage(embeddedPage2, {
+          newPage.drawPage(embeddedPages[i + 1], {
             x: width, // Move to the right by one page width
             y: 0,
             width: width,

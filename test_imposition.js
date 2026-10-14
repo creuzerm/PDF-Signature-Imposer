@@ -120,8 +120,6 @@ async function runTest() {
             if (s > 0) {
                 const prevSigLastPage = result.map[start - 1]; // Should be middle of prev sig
                 const currSigFirstPage = result.map[start];     // Should be end of curr sig
-                // Just log to confirm we exist
-                // console.log(`   Transition Sig ${s}->${s+1} OK.`);
             }
         }
     }
