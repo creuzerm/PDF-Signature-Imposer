@@ -7,6 +7,22 @@
     }
 }(typeof self !== "undefined" ? self : this, function (PDFDocument) {
 
+    function calculateImpositionOffsets(sourceWidth, sourceHeight, sheetWidth, sheetHeight, isLeft, creepOffset = 0) {
+        const halfSheetWidth = sheetWidth / 2;
+        const y = (sheetHeight - sourceHeight) / 2;
+
+        let x;
+        if (isLeft) {
+            x = (halfSheetWidth - sourceWidth) / 2;
+            x += creepOffset; // move towards spine (right)
+        } else {
+            x = halfSheetWidth + (halfSheetWidth - sourceWidth) / 2;
+            x -= creepOffset; // move towards spine (left)
+        }
+
+        return { x, y };
+    }
+
     async function create2UpSpreads(pdfBytes) {
       // 1. Load the source PDF
       const sourcePdf = await PDFDocument.load(pdfBytes);
@@ -51,5 +67,5 @@
       return outputBytes;
     }
 
-    return { create2UpSpreads };
+    return { create2UpSpreads, calculateImpositionOffsets };
 }));
