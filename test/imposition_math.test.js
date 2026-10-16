@@ -78,6 +78,49 @@ test('generateImpositionMap processes multiple signatures sequentially', (t) => 
     assert.strictEqual(blanks.length, 14, 'Should identify 14 blank placeholder slots in the last signature');
 });
 
+test('generateImpositionMap correctly sequences odd total page counts for Saddle Stitch (single signature)', (t) => {
+    const oddPageCounts = [1, 3, 5, 7, 13, 27];
+
+    for (const pageCount of oddPageCounts) {
+        const signatureSize = Math.ceil(pageCount / 4) * 4;
+        const map = generateImpositionMap(pageCount, signatureSize);
+
+        const expectedSheets = Math.ceil(pageCount / 4);
+        const actualSheets = map.length / 4;
+
+        assert.strictEqual(actualSheets, expectedSheets, `For ${pageCount} pages, expected ${expectedSheets} sheets, got ${actualSheets}`);
+
+        const blanks = map.filter(pageIndex => pageIndex >= pageCount);
+        const expectedBlanks = signatureSize - pageCount;
+        assert.strictEqual(blanks.length, expectedBlanks, `For ${pageCount} pages, expected ${expectedBlanks} blanks, got ${blanks.length}`);
+    }
+});
+
+test('generateImpositionMap correctly sequences odd total page counts for multi-signature perfect binding', (t) => {
+    // 21 pages in 16-page signatures
+    const pageCount = 21;
+    const signatureSize = 16;
+    const map = generateImpositionMap(pageCount, signatureSize);
+
+    // Total signatures = Math.ceil(21 / 16) = 2
+    // Total slots = 2 * 16 = 32
+    assert.strictEqual(map.length, 32, 'Should yield 32 slots');
+
+    // Signature 1 (pages 0-15)
+    const sig1 = map.slice(0, 16);
+    assert.strictEqual(Math.min(...sig1), 0);
+    assert.strictEqual(Math.max(...sig1), 15);
+
+    // Signature 2 (pages 16-31)
+    const sig2 = map.slice(16, 32);
+    assert.strictEqual(Math.min(...sig2), 16);
+    assert.strictEqual(Math.max(...sig2), 31);
+
+    // Blanks are pages >= 21 in the final signature
+    const blanks = map.filter(pageIndex => pageIndex >= pageCount);
+    assert.strictEqual(blanks.length, 11, 'Should identify 11 blank placeholder slots in the last signature');
+});
+
 test('generateImpositionMap handles 0 pages edge case', (t) => {
     const map0 = generateImpositionMap(0, 16);
     assert.strictEqual(map0.length, 0);
