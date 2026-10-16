@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' blob: data:;">
     <title>PDF Booklet Signature Imposer</title>
     <link rel="icon" type="image/svg+xml" href="src/assets/PDFImposerIcon.svg">
     <!-- Tailwind CSS for styling -->
@@ -195,6 +196,35 @@
                 return;
             }
 
+            const file = files[0];
+            if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+                fileNameDisplay.textContent = 'Invalid file. Please upload a PDF.';
+                fileNameDisplay.classList.remove('text-indigo-700', 'dark:text-indigo-300', 'font-semibold', 'text-gray-500', 'dark:text-gray-400');
+                fileNameDisplay.classList.add('text-red-600', 'dark:text-red-400', 'font-semibold');
+                statusMessage.textContent = '';
+                errorMessage.textContent = 'Only .pdf files are supported.';
+                statusArea.classList.remove('hidden');
+
+                uploadedFile = null;
+                processBtn.disabled = true;
+                return;
+            }
+
+            const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                fileNameDisplay.textContent = 'File too large.';
+                fileNameDisplay.classList.remove('text-indigo-700', 'dark:text-indigo-300', 'font-semibold', 'text-gray-500', 'dark:text-gray-400');
+                fileNameDisplay.classList.add('text-red-600', 'dark:text-red-400', 'font-semibold');
+
+                resetStatus();
+                errorMessage.textContent = `File exceeds the maximum size limit of 50MB.`;
+                statusArea.classList.remove('hidden');
+
+                uploadedFile = null;
+                processBtn.disabled = true;
+                return;
+            }
+
             uploadedFile = files[0];
             fileNameDisplay.textContent = 'Analyzing PDF...';
             fileNameDisplay.classList.remove('text-gray-500', 'dark:text-gray-400');
@@ -203,7 +233,7 @@
             
             try {
                 const existingPdfBytes = await uploadedFile.arrayBuffer();
-                const pdfDoc = await PDFDocument.load(existingPdfBytes);
+                const pdfDoc = await PDFDocument.load(existingPdfBytes, { throwOnInvalidObject: true, capNumbers: true });
                 const originalPageCount = pdfDoc.getPageCount();
                 currentOriginalPageCount = originalPageCount; 
 
@@ -282,7 +312,7 @@
             try {
                 // 2. Load the PDF
                 const existingPdfBytes = await uploadedFile.arrayBuffer();
-                const pdfDoc = await PDFDocument.load(existingPdfBytes);
+                const pdfDoc = await PDFDocument.load(existingPdfBytes, { throwOnInvalidObject: true, capNumbers: true });
                 const originalPageCount = pdfDoc.getPageCount();
                 const isFlyleafEnabled = document.getElementById('separate-cover-flyleaf').checked;
 
