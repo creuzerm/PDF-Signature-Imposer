@@ -15,8 +15,10 @@
      * @returns {number[]} Array of zero-based page indices.
      */
     function generateImpositionMap(pageCount, signatureSize) {
+        if (pageCount === 0) return [];
         const totalSignatures = Math.ceil(pageCount / signatureSize);
-        const impositionMap = [];
+        const impositionMap = new Array(totalSignatures * signatureSize);
+        let idx = 0;
 
         for (let sigIndex = 0; sigIndex < totalSignatures; sigIndex++) {
             const sigStartPage = sigIndex * signatureSize;
@@ -31,12 +33,10 @@
                 const lowLocal = sheet * 2;
                 const highLocal = signatureSize - 1 - (sheet * 2);
 
-                const p1 = sigStartPage + highLocal; // Left (Front)
-                const p2 = sigStartPage + lowLocal;  // Right (Front)
-                const p3 = sigStartPage + lowLocal + 1; // Left (Back)
-                const p4 = sigStartPage + highLocal - 1; // Right (Back)
-
-                impositionMap.push(p1, p2, p3, p4);
+                impositionMap[idx++] = sigStartPage + highLocal; // Left (Front)
+                impositionMap[idx++] = sigStartPage + lowLocal;  // Right (Front)
+                impositionMap[idx++] = sigStartPage + lowLocal + 1; // Left (Back)
+                impositionMap[idx++] = sigStartPage + highLocal - 1; // Right (Back)
             }
         }
         return impositionMap;
