@@ -1,6 +1,6 @@
 const { PDFDocument, PDFName, rgb, StandardFonts } = require('pdf-lib');
 const fs = require('fs');
-const { create2UpSpreads } = require('./src/layout_logic');
+const { create2UpSpreads, calculateImpositionOffsets } = require('./src/layout_logic');
 
 async function runTestForPages(numPages) {
     console.log(`[Test] Creating ${numPages}-page source PDF...`);
@@ -66,7 +66,66 @@ async function runTestForPages(numPages) {
     fs.writeFileSync(`test_output_2up_${numPages}pages.pdf`, outputBytes);
 }
 
+function testCreepCompensation() {
+    console.log(`[Test] Running creep compensation tests...`);
+    const sourceWidth = 200;
+    const sourceHeight = 300;
+    const targetWidth = 400;
+    const targetHeight = 300;
+    const totalSheets = 4; // 16-page signature
+    const creepAmount = 2; // 2 points max creep
+
+    // Outermost sheet (sheetIndex = 0)
+    const outLeft = calculateImpositionOffsets({
+        sourceWidth, sourceHeight, targetWidth, targetHeight,
+        isLeftPage: true, sheetIndex: 0, totalSheets, creepAmount
+    });
+    const outRight = calculateImpositionOffsets({
+        sourceWidth, sourceHeight, targetWidth, targetHeight,
+        isLeftPage: false, sheetIndex: 0, totalSheets, creepAmount
+    });
+
+    if (outLeft.x !== 0 || outRight.x !== 200 || outLeft.y !== 0 || outRight.y !== 0) {
+        console.error(`❌ FAIL: Expected outermost sheet creep to be 0.`);
+        console.error(`outLeft: ${JSON.stringify(outLeft)}, outRight: ${JSON.stringify(outRight)}`);
+        process.exit(1);
+    }
+
+    // Innermost sheet (sheetIndex = 3)
+    const inLeft = calculateImpositionOffsets({
+        sourceWidth, sourceHeight, targetWidth, targetHeight,
+        isLeftPage: true, sheetIndex: 3, totalSheets, creepAmount
+    });
+    const inRight = calculateImpositionOffsets({
+        sourceWidth, sourceHeight, targetWidth, targetHeight,
+        isLeftPage: false, sheetIndex: 3, totalSheets, creepAmount
+    });
+
+    // Innermost left should be shifted right by creepAmount (2)
+    // Innermost right should be shifted left by creepAmount (2)
+    if (inLeft.x !== 2 || inRight.x !== 198) {
+        console.error(`❌ FAIL: Expected innermost sheet creep to be fully applied.`);
+        console.error(`inLeft: ${JSON.stringify(inLeft)}, inRight: ${JSON.stringify(inRight)}`);
+        process.exit(1);
+    }
+
+    // Middle sheet (sheetIndex = 1)
+    const midLeft = calculateImpositionOffsets({
+        sourceWidth, sourceHeight, targetWidth, targetHeight,
+        isLeftPage: true, sheetIndex: 1, totalSheets, creepAmount
+    });
+    const expectedMidCreep = (1 / 3) * 2;
+
+    if (Math.abs(midLeft.x - expectedMidCreep) > 0.001) {
+        console.error(`❌ FAIL: Expected middle sheet creep to be interpolated.`);
+        process.exit(1);
+    }
+
+    console.log(`✅ Creep compensation logic verified.`);
+}
+
 async function runAllTests() {
+    testCreepCompensation();
     await runTestForPages(4);
     await runTestForPages(3);
     await runTestForPages(5);
