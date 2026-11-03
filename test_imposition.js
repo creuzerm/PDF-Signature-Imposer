@@ -109,6 +109,34 @@ async function runTest() {
         console.log(`✅ Single-Signature Padding Math passed.`);
     }
 
+    // Verify large booklets integrity
+    console.log(`\n[Inspection] Checking Large Booklets Integrity (64-page and 128-page signatures)...`);
+    const largeDocPages = 1000;
+
+    // 64-page signature test
+    const map64 = generateImpositionMap(largeDocPages, 64);
+    if (map64.length !== Math.ceil(largeDocPages / 64) * 64) {
+        console.error(`❌ FAIL: 64-page signature map length incorrect.`);
+        allPassed = false;
+    } else if (map64[0] !== 63 || map64[63] !== 32) {
+        console.error(`❌ FAIL: 64-page signature map integrity check failed.`);
+        allPassed = false;
+    } else {
+        console.log(`✅ 64-page signature mapping passed.`);
+    }
+
+    // 128-page signature test
+    const map128 = generateImpositionMap(largeDocPages, 128);
+    if (map128.length !== Math.ceil(largeDocPages / 128) * 128) {
+        console.error(`❌ FAIL: 128-page signature map length incorrect.`);
+        allPassed = false;
+    } else if (map128[0] !== 127 || map128[127] !== 64) {
+        console.error(`❌ FAIL: 128-page signature map integrity check failed.`);
+        allPassed = false;
+    } else {
+        console.log(`✅ 128-page signature mapping passed.`);
+    }
+
     // Verify Every Signature
     for (let s = 0; s < result.totalSignatures; s++) {
         const start = s * SIGNATURE_SIZE;
