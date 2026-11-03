@@ -119,5 +119,43 @@
       return outputBytes;
     }
 
-    return { create2UpSpreads, calculateImpositionOffsets };
+    /**
+     * Calculates 4-Up imposition duplex layout calculation and rotation angles
+     * @param {number} slotIndex - The index of the slot on the 4-Up sheet (0, 1, 2, 3)
+     * @param {string} foldOrientation - 'head-to-head' or 'head-to-toe'
+     * @returns {number} The rotation angle in degrees
+     */
+    function calculate4UpLayout(slotIndex, foldOrientation) {
+        if (foldOrientation === 'head-to-head') {
+            // In head-to-head, top slots (assumed 0 and 1) are rotated 180 degrees
+            if (slotIndex === 0 || slotIndex === 1) {
+                return 180;
+            }
+        }
+        // For head-to-toe, or bottom slots in head-to-head
+        return 0;
+    }
+
+    /**
+     * Generates coordinates for fold tick marks along the gutters for 4-up layout.
+     * @param {number} sheetWidth - The width of the physical sheet
+     * @param {number} sheetHeight - The height of the physical sheet
+     * @returns {object} Coordinates for horizontal and vertical tick marks
+     */
+    function generateFoldTickMarks(sheetWidth, sheetHeight) {
+        const xCenter = sheetWidth / 2;
+        const yCenter = sheetHeight / 2;
+
+        return {
+            horizontal: { x: xCenter, y: yCenter },
+            vertical: { x: xCenter, y: yCenter }
+        };
+    }
+
+    return {
+        create2UpSpreads,
+        calculateImpositionOffsets,
+        calculate4UpLayout,
+        generateFoldTickMarks
+    };
 }));
