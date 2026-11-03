@@ -1,3 +1,5 @@
+const { test } = require('node:test');
+const assert = require('node:assert');
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const fs = require('fs');
 const { generateImpositionMap } = require('./src/imposition_logic');
@@ -153,43 +155,6 @@ async function runTest() {
         allPassed = false;
     }
 
-    console.log(`\n[Inspection] Checking 4-Up Layout Rotation Angles...`);
-    const headToHeadRotations = [
-        calculate4UpLayout(0, 'head-to-head'),
-        calculate4UpLayout(1, 'head-to-head'),
-        calculate4UpLayout(2, 'head-to-head'),
-        calculate4UpLayout(3, 'head-to-head')
-    ];
-    if (JSON.stringify(headToHeadRotations) !== JSON.stringify([180, 180, 0, 0])) {
-        console.error(`❌ FAIL: Incorrect rotation for head-to-head. Expected [180, 180, 0, 0], got ${JSON.stringify(headToHeadRotations)}`);
-        allPassed = false;
-    } else {
-        console.log(`✅ 4-Up head-to-head rotations passed.`);
-    }
-
-    const headToToeRotations = [
-        calculate4UpLayout(0, 'head-to-toe'),
-        calculate4UpLayout(1, 'head-to-toe'),
-        calculate4UpLayout(2, 'head-to-toe'),
-        calculate4UpLayout(3, 'head-to-toe')
-    ];
-    if (JSON.stringify(headToToeRotations) !== JSON.stringify([0, 0, 0, 0])) {
-        console.error(`❌ FAIL: Incorrect rotation for head-to-toe. Expected [0, 0, 0, 0], got ${JSON.stringify(headToToeRotations)}`);
-        allPassed = false;
-    } else {
-        console.log(`✅ 4-Up head-to-toe rotations passed.`);
-    }
-
-    console.log(`\n[Inspection] Checking Fold Tick Mark Coordinates...`);
-    const tickMarks = generateFoldTickMarks(400, 300);
-    if (tickMarks.horizontal.x !== 200 || tickMarks.horizontal.y !== 150 ||
-        tickMarks.vertical.x !== 200 || tickMarks.vertical.y !== 150) {
-        console.error(`❌ FAIL: Incorrect fold tick marks coordinates. Expected {horizontal:{x:200,y:150}, vertical:{x:200,y:150}}, got ${JSON.stringify(tickMarks)}`);
-        allPassed = false;
-    } else {
-        console.log(`✅ Fold tick marks coordinates passed.`);
-    }
-
     if (allPassed) {
         console.log("\n✅ ALL TESTS PASSED.");
         console.log("   - Signatures did not interleave.");
@@ -204,3 +169,31 @@ async function runTest() {
 }
 
 runTest().catch(err => console.error(err));
+
+test('4-Up Layout Rotation Angles - head-to-head', () => {
+    const headToHeadRotations = [
+        calculate4UpLayout(0, 'head-to-head'),
+        calculate4UpLayout(1, 'head-to-head'),
+        calculate4UpLayout(2, 'head-to-head'),
+        calculate4UpLayout(3, 'head-to-head')
+    ];
+    assert.deepStrictEqual(headToHeadRotations, [180, 180, 0, 0]);
+});
+
+test('4-Up Layout Rotation Angles - head-to-toe', () => {
+    const headToToeRotations = [
+        calculate4UpLayout(0, 'head-to-toe'),
+        calculate4UpLayout(1, 'head-to-toe'),
+        calculate4UpLayout(2, 'head-to-toe'),
+        calculate4UpLayout(3, 'head-to-toe')
+    ];
+    assert.deepStrictEqual(headToToeRotations, [0, 0, 0, 0]);
+});
+
+test('Fold Tick Mark Coordinates', () => {
+    const tickMarks = generateFoldTickMarks(400, 300);
+    assert.deepStrictEqual(tickMarks, {
+        horizontal: { x: 200, y: 150 },
+        vertical: { x: 200, y: 150 }
+    });
+});
