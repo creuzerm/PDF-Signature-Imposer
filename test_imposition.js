@@ -94,6 +94,18 @@ async function runTest() {
         console.log(`✅ Zero pages test passed.`);
     }
 
+    // Check Single Signature (Saddle-Stitched) Booklet Edge Case
+    // e.g., 10 pages into a 12-page signature
+    console.log(`\n[Inspection] Checking Single-Signature Saddle-Stitched Math (10 pages in 12-page sig)...`);
+    const saddleMap = generateImpositionMap(10, 12);
+    const expectedSaddleMap = [11, 0, 1, 10, 9, 2, 3, 8, 7, 4, 5, 6];
+    if (JSON.stringify(saddleMap) !== JSON.stringify(expectedSaddleMap)) {
+        console.error(`❌ FAIL: Single-Signature Padding Math. Expected ${expectedSaddleMap}, Actual ${saddleMap}`);
+        allPassed = false;
+    } else {
+        console.log(`✅ Single-Signature Padding Math passed.`);
+    }
+
     // Verify Every Signature
     for (let s = 0; s < result.totalSignatures; s++) {
         const start = s * SIGNATURE_SIZE;
