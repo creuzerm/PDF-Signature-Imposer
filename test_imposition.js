@@ -171,29 +171,38 @@ async function runTest() {
 runTest().catch(err => console.error(err));
 
 test('4-Up Layout Rotation Angles - head-to-head', () => {
-    const headToHeadRotations = [
-        calculate4UpLayout(0, 'head-to-head'),
-        calculate4UpLayout(1, 'head-to-head'),
-        calculate4UpLayout(2, 'head-to-head'),
-        calculate4UpLayout(3, 'head-to-head')
-    ];
-    assert.deepStrictEqual(headToHeadRotations, [180, 180, 0, 0]);
+    assert.strictEqual(calculate4UpLayout(0, 'head-to-head'), 180, 'Slot 0 (top left) should rotate 180');
+    assert.strictEqual(calculate4UpLayout(1, 'head-to-head'), 180, 'Slot 1 (top right) should rotate 180');
+    assert.strictEqual(calculate4UpLayout(2, 'head-to-head'), 0, 'Slot 2 (bottom left) should rotate 0');
+    assert.strictEqual(calculate4UpLayout(3, 'head-to-head'), 0, 'Slot 3 (bottom right) should rotate 0');
 });
 
 test('4-Up Layout Rotation Angles - head-to-toe', () => {
-    const headToToeRotations = [
-        calculate4UpLayout(0, 'head-to-toe'),
-        calculate4UpLayout(1, 'head-to-toe'),
-        calculate4UpLayout(2, 'head-to-toe'),
-        calculate4UpLayout(3, 'head-to-toe')
-    ];
-    assert.deepStrictEqual(headToToeRotations, [0, 0, 0, 0]);
+    assert.strictEqual(calculate4UpLayout(0, 'head-to-toe'), 0, 'Slot 0 should rotate 0');
+    assert.strictEqual(calculate4UpLayout(1, 'head-to-toe'), 0, 'Slot 1 should rotate 0');
+    assert.strictEqual(calculate4UpLayout(2, 'head-to-toe'), 0, 'Slot 2 should rotate 0');
+    assert.strictEqual(calculate4UpLayout(3, 'head-to-toe'), 0, 'Slot 3 should rotate 0');
 });
 
 test('Fold Tick Mark Coordinates', () => {
-    const tickMarks = generateFoldTickMarks(400, 300);
-    assert.deepStrictEqual(tickMarks, {
+    // Standard sheet 400x300
+    const tickMarks1 = generateFoldTickMarks(400, 300);
+    assert.deepStrictEqual(tickMarks1, {
         horizontal: { x: 200, y: 150 },
         vertical: { x: 200, y: 150 }
+    });
+
+    // Square sheet 500x500
+    const tickMarks2 = generateFoldTickMarks(500, 500);
+    assert.deepStrictEqual(tickMarks2, {
+        horizontal: { x: 250, y: 250 },
+        vertical: { x: 250, y: 250 }
+    });
+
+    // Non-even dimensions
+    const tickMarks3 = generateFoldTickMarks(251, 199);
+    assert.deepStrictEqual(tickMarks3, {
+        horizontal: { x: 125.5, y: 99.5 },
+        vertical: { x: 125.5, y: 99.5 }
     });
 });
