@@ -123,12 +123,19 @@
      * Calculates 4-Up imposition duplex layout calculation and rotation angles
      * @param {number} slotIndex - The index of the slot on the 4-Up sheet (0, 1, 2, 3)
      * @param {string} foldOrientation - 'head-to-head' or 'head-to-toe'
+     * @param {boolean} isBackSide - Optional flag for duplex back side mapping (true for slots 4-7 logic)
      * @returns {number} The rotation angle in degrees
      */
-    function calculate4UpLayout(slotIndex, foldOrientation) {
+    function calculate4UpLayout(slotIndex, foldOrientation, isBackSide = false) {
+        let effectiveSlot = slotIndex;
+        if (slotIndex >= 4) {
+            effectiveSlot = slotIndex % 4;
+            isBackSide = true;
+        }
+
         if (foldOrientation === 'head-to-head') {
-            // In head-to-head, top slots (assumed 0 and 1) are rotated 180 degrees
-            if (slotIndex === 0 || slotIndex === 1) {
+            // In head-to-head, top slots (0 and 1) are rotated 180 degrees
+            if (effectiveSlot === 0 || effectiveSlot === 1) {
                 return 180;
             }
         }

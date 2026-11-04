@@ -212,6 +212,28 @@ test('4-Up Layout Rotation Angles - head-to-toe', () => {
     assert.strictEqual(calculate4UpLayout(3, 'head-to-toe'), 0, 'Slot 3 should rotate 0');
 });
 
+test('4-Up Layout Rotation Angles - Duplex Back Side (head-to-head)', () => {
+    assert.strictEqual(calculate4UpLayout(0, 'head-to-head', true), 180, 'Back Side Slot 0 should rotate 180');
+    assert.strictEqual(calculate4UpLayout(1, 'head-to-head', true), 180, 'Back Side Slot 1 should rotate 180');
+    assert.strictEqual(calculate4UpLayout(2, 'head-to-head', true), 0, 'Back Side Slot 2 should rotate 0');
+    assert.strictEqual(calculate4UpLayout(3, 'head-to-head', true), 0, 'Back Side Slot 3 should rotate 0');
+
+    // Testing automatic fallback via slots 4-7
+    assert.strictEqual(calculate4UpLayout(4, 'head-to-head'), 180, 'Back Side Slot 4 should rotate 180');
+    assert.strictEqual(calculate4UpLayout(7, 'head-to-head'), 0, 'Back Side Slot 7 should rotate 0');
+});
+
+test('4-Up Layout Rotation Angles - Duplex Back Side (head-to-toe)', () => {
+    assert.strictEqual(calculate4UpLayout(0, 'head-to-toe', true), 0, 'Back Side Slot 0 should rotate 0');
+    assert.strictEqual(calculate4UpLayout(1, 'head-to-toe', true), 0, 'Back Side Slot 1 should rotate 0');
+    assert.strictEqual(calculate4UpLayout(2, 'head-to-toe', true), 0, 'Back Side Slot 2 should rotate 0');
+    assert.strictEqual(calculate4UpLayout(3, 'head-to-toe', true), 0, 'Back Side Slot 3 should rotate 0');
+
+    // Testing automatic fallback via slots 4-7
+    assert.strictEqual(calculate4UpLayout(5, 'head-to-toe'), 0, 'Back Side Slot 5 should rotate 0');
+    assert.strictEqual(calculate4UpLayout(6, 'head-to-toe'), 0, 'Back Side Slot 6 should rotate 0');
+});
+
 test('Fold Tick Mark Coordinates', () => {
     // Standard sheet 400x300
     const tickMarks1 = generateFoldTickMarks(400, 300);
@@ -232,5 +254,12 @@ test('Fold Tick Mark Coordinates', () => {
     assert.deepStrictEqual(tickMarks3, {
         horizontal: { x: 125.5, y: 99.5 },
         vertical: { x: 125.5, y: 99.5 }
+    });
+
+    // Signature gutter explicitly
+    const tickMarks4 = generateFoldTickMarks(420, 297); // A3 dimensions
+    assert.deepStrictEqual(tickMarks4, {
+        horizontal: { x: 210, y: 148.5 },
+        vertical: { x: 210, y: 148.5 }
     });
 });
