@@ -263,3 +263,24 @@ test('Fold Tick Mark Coordinates', () => {
         vertical: { x: 210, y: 148.5 }
     });
 });
+
+test('Additional Verification: 4-Up imposition duplex layout calculation and rotation angles (head-to-head vs head-to-toe fold orientations)', () => {
+    // Explicitly verify head-to-head vs head-to-toe fold orientations
+    assert.strictEqual(calculate4UpLayout(0, 'head-to-head'), 180, 'head-to-head top-left slot should rotate 180');
+    assert.strictEqual(calculate4UpLayout(1, 'head-to-head'), 180, 'head-to-head top-right slot should rotate 180');
+    assert.strictEqual(calculate4UpLayout(2, 'head-to-head'), 0, 'head-to-head bottom-left slot should not rotate');
+    assert.strictEqual(calculate4UpLayout(3, 'head-to-head'), 0, 'head-to-head bottom-right slot should not rotate');
+
+    assert.strictEqual(calculate4UpLayout(0, 'head-to-toe'), 0, 'head-to-toe top-left slot should not rotate');
+    assert.strictEqual(calculate4UpLayout(1, 'head-to-toe'), 0, 'head-to-toe top-right slot should not rotate');
+    assert.strictEqual(calculate4UpLayout(2, 'head-to-toe'), 0, 'head-to-toe bottom-left slot should not rotate');
+    assert.strictEqual(calculate4UpLayout(3, 'head-to-toe'), 0, 'head-to-toe bottom-right slot should not rotate');
+});
+
+test('Additional Verification: fold tick mark coordinate generation on the signature gutter', () => {
+    const gutterMarks = generateFoldTickMarks(840, 594);
+    assert.deepStrictEqual(gutterMarks, {
+        horizontal: { x: 420, y: 297 },
+        vertical: { x: 420, y: 297 }
+    });
+});
