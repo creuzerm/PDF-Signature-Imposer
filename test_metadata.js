@@ -20,6 +20,7 @@ test('Schema.org WebApplication JSON-LD Metadata Verification', () => {
     assert.ok(jsonLd.description, 'description property should exist');
     assert.ok(jsonLd.operatingSystem, 'operatingSystem property should exist');
     assert.ok(jsonLd.browserRequirements, 'browserRequirements property should exist');
+    assert.strictEqual(jsonLd.softwareVersion, '1.0.0', 'softwareVersion property should be 1.0.0');
 
     console.log("✅ JSON-LD metadata verified successfully.");
 });
