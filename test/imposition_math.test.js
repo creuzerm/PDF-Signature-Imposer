@@ -125,3 +125,42 @@ test('generateImpositionMap handles 0 pages edge case', (t) => {
     const map0 = generateImpositionMap(0, 16);
     assert.strictEqual(map0.length, 0);
 });
+
+test('generateImpositionMap calculates 8-up mini-booklet imposition page ordering and fold sheet calculations', (t) => {
+    // 8-up layout uses 16-page signatures
+    const signatureSize = 16;
+    const expectedSheets = signatureSize / 4;
+    assert.strictEqual(expectedSheets, 4, '8-up layout should have 4 fold sheets');
+
+    const map = generateImpositionMap(signatureSize, signatureSize);
+    assert.strictEqual(map.length, signatureSize);
+
+    // Verify ordering is standard booklet
+    assert.deepStrictEqual(map, [
+        15, 0, 1, 14,
+        13, 2, 3, 12,
+        11, 4, 5, 10,
+        9, 6, 7, 8
+    ]);
+});
+
+test('generateImpositionMap calculates 16-up mini-booklet imposition page ordering and fold sheet calculations', (t) => {
+    // 16-up layout uses 32-page signatures
+    const signatureSize = 32;
+    const expectedSheets = signatureSize / 4;
+    assert.strictEqual(expectedSheets, 8, '16-up layout should have 8 fold sheets');
+
+    const map = generateImpositionMap(signatureSize, signatureSize);
+    assert.strictEqual(map.length, signatureSize);
+
+    assert.deepStrictEqual(map, [
+        31, 0, 1, 30,
+        29, 2, 3, 28,
+        27, 4, 5, 26,
+        25, 6, 7, 24,
+        23, 8, 9, 22,
+        21, 10, 11, 20,
+        19, 12, 13, 18,
+        17, 14, 15, 16
+    ]);
+});
