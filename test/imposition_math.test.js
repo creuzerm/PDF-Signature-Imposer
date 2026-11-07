@@ -125,3 +125,79 @@ test('generateImpositionMap handles 0 pages edge case', (t) => {
     const map0 = generateImpositionMap(0, 16);
     assert.strictEqual(map0.length, 0);
 });
+
+function calculateMiniBookletFoldSheets(pageCount, pagesPerSheet) {
+    return Math.ceil(pageCount / pagesPerSheet);
+}
+
+// Typical 8-up fold (16 pages per sheet)
+function generate8UpSignatureMap(pageCount) {
+    const map = [];
+    const pagesPerSheet = 16;
+    const numSheets = Math.ceil(pageCount / pagesPerSheet);
+    const totalSlots = numSheets * pagesPerSheet;
+
+    for (let sheet = 0; sheet < numSheets; sheet++) {
+        const offset = sheet * pagesPerSheet;
+        // Standard 8-up folding map for 1 physical sheet
+        const sheetMap = [
+            8, 9, 12, 5,
+            1, 16, 13, 4,
+            7, 10, 11, 6,
+            2, 15, 14, 3
+        ];
+
+        for (const p of sheetMap) {
+            map.push(p - 1 + offset);
+        }
+    }
+    return map;
+}
+
+// Typical 16-up fold (32 pages per sheet)
+function generate16UpSignatureMap(pageCount) {
+    const map = [];
+    const pagesPerSheet = 32;
+    const numSheets = Math.ceil(pageCount / pagesPerSheet);
+    const totalSlots = numSheets * pagesPerSheet;
+
+    for (let sheet = 0; sheet < numSheets; sheet++) {
+        const offset = sheet * pagesPerSheet;
+        // Standard 16-up folding map for 1 physical sheet
+        const sheetMap = [
+             1, 32, 31,  2,  3, 30, 29,  4,
+             5, 28, 27,  6,  7, 26, 25,  8,
+             9, 24, 23, 10, 11, 22, 21, 12,
+            13, 20, 19, 14, 15, 18, 17, 16
+        ];
+
+        for (const p of sheetMap) {
+            map.push(p - 1 + offset);
+        }
+    }
+    return map;
+}
+
+test('8-up mini-booklet imposition page ordering and fold sheet calculations', (t) => {
+    const pageCount = 64;
+    const map = generate8UpSignatureMap(pageCount);
+    const expectedSheets = calculateMiniBookletFoldSheets(pageCount, 16);
+
+    assert.strictEqual(expectedSheets, 4, '64 pages should require 4 physical sheets in an 8-up layout');
+    assert.strictEqual(map.length, 64, '8-up map for 64 pages should have 64 slots');
+    assert.strictEqual(map[0], 7, 'Slot 0 should be index 7');
+    assert.strictEqual(map[15], 2, 'Slot 15 should be index 2');
+    assert.strictEqual(map[16], 23, 'Slot 16 (sheet 2, slot 0) should be index 23');
+});
+
+test('16-up mini-booklet imposition page ordering and fold sheet calculations', (t) => {
+    const pageCount = 64;
+    const map = generate16UpSignatureMap(pageCount);
+    const expectedSheets = calculateMiniBookletFoldSheets(pageCount, 32);
+
+    assert.strictEqual(expectedSheets, 2, '64 pages should require 2 physical sheets in a 16-up layout');
+    assert.strictEqual(map.length, 64, '16-up map for 64 pages should have 64 slots');
+    assert.strictEqual(map[0], 0, 'Slot 0 should be index 0');
+    assert.strictEqual(map[31], 15, 'Slot 31 should be index 15');
+    assert.strictEqual(map[32], 32, 'Slot 32 (sheet 2, slot 0) should be index 32');
+});
