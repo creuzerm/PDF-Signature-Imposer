@@ -85,8 +85,8 @@ test('Booklet Imposition Math: Front/back sheet pairing indexes', (t) => {
 test('Booklet Imposition Math: 8-up mini-booklet imposition page ordering and fold sheet calculations', (t) => {
     // 8-up layout uses 16-page signatures
     const signatureSize = 16;
-    const expectedSheets = signatureSize / 4;
-    assert.strictEqual(expectedSheets, 4, '8-up layout should have 4 fold sheets');
+    const expectedSheets = Math.ceil(signatureSize / 16);
+    assert.strictEqual(expectedSheets, 1, '8-up layout should have 1 fold sheet');
 
     const map = generateImpositionMap(signatureSize, signatureSize);
     assert.strictEqual(map.length, signatureSize);
@@ -103,8 +103,8 @@ test('Booklet Imposition Math: 8-up mini-booklet imposition page ordering and fo
 test('Booklet Imposition Math: 16-up mini-booklet imposition page ordering and fold sheet calculations', (t) => {
     // 16-up layout uses 32-page signatures
     const signatureSize = 32;
-    const expectedSheets = signatureSize / 4;
-    assert.strictEqual(expectedSheets, 8, '16-up layout should have 8 fold sheets');
+    const expectedSheets = Math.ceil(signatureSize / 32);
+    assert.strictEqual(expectedSheets, 1, '16-up layout should have 1 fold sheet');
 
     const map = generateImpositionMap(signatureSize, signatureSize);
     assert.strictEqual(map.length, signatureSize);
