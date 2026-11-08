@@ -83,31 +83,35 @@ test('Booklet Imposition Math: Front/back sheet pairing indexes', (t) => {
 });
 
 test('Booklet Imposition Math: 8-up mini-booklet imposition page ordering and fold sheet calculations', (t) => {
-    // 8-up layout uses 16-page signatures
+    // 8-up layout uses 16-page signatures (8 pages per side * 2 sides = 16 pages per physical fold sheet)
     const signatureSize = 16;
-    const expectedSheets = Math.ceil(signatureSize / 16);
-    assert.strictEqual(expectedSheets, 1, '8-up layout should have 1 fold sheet');
-
     const map = generateImpositionMap(signatureSize, signatureSize);
-    assert.strictEqual(map.length, signatureSize);
 
-    // Verify ordering is standard booklet
+    // Fold sheet calculations
+    // Total pages = 16, Pages per physical sheet = 16
+    const expectedSheets = Math.ceil(16 / 16);
+    assert.strictEqual(expectedSheets, 1, '8-up layout should have 1 physical fold sheet for 16 pages');
+    assert.strictEqual(map.length, 16, '8-up mapping should yield 16 slots');
+
+    // Verify ordering is standard booklet layout
     assert.deepStrictEqual(map, [
         15, 0, 1, 14,
         13, 2, 3, 12,
         11, 4, 5, 10,
         9, 6, 7, 8
-    ]);
+    ], '8-up mini-booklet array ordering must match expected structure');
 });
 
 test('Booklet Imposition Math: 16-up mini-booklet imposition page ordering and fold sheet calculations', (t) => {
-    // 16-up layout uses 32-page signatures
+    // 16-up layout uses 32-page signatures (16 pages per side * 2 sides = 32 pages per physical fold sheet)
     const signatureSize = 32;
-    const expectedSheets = Math.ceil(signatureSize / 32);
-    assert.strictEqual(expectedSheets, 1, '16-up layout should have 1 fold sheet');
-
     const map = generateImpositionMap(signatureSize, signatureSize);
-    assert.strictEqual(map.length, signatureSize);
+
+    // Fold sheet calculations
+    // Total pages = 32, Pages per physical sheet = 32
+    const expectedSheets = Math.ceil(32 / 32);
+    assert.strictEqual(expectedSheets, 1, '16-up layout should have 1 physical fold sheet for 32 pages');
+    assert.strictEqual(map.length, 32, '16-up mapping should yield 32 slots');
 
     assert.deepStrictEqual(map, [
         31, 0, 1, 30,
@@ -118,5 +122,5 @@ test('Booklet Imposition Math: 16-up mini-booklet imposition page ordering and f
         21, 10, 11, 20,
         19, 12, 13, 18,
         17, 14, 15, 16
-    ]);
+    ], '16-up mini-booklet array ordering must match expected structure');
 });
