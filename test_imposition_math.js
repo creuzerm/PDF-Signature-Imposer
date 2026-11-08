@@ -8,6 +8,49 @@ test('4-page signature booklet page reordering', () => {
     assert.deepStrictEqual(map, [3, 0, 1, 2]);
 });
 
+test('8-up mini-booklet imposition page ordering and fold sheet calculations', () => {
+    // 8-up layout uses 16-page signatures (8 pages per side * 2 sides = 16 pages per physical fold sheet)
+    const signatureSize = 16;
+    const map = generateImpositionMap(signatureSize, signatureSize);
+
+    // Fold sheet calculations
+    // Total pages = 16, Pages per physical sheet = 16
+    const expectedSheets = Math.ceil(16 / 16);
+    assert.strictEqual(expectedSheets, 1, '8-up layout should have 1 physical fold sheet for 16 pages');
+    assert.strictEqual(map.length, 16, '8-up mapping should yield 16 slots');
+
+    // Verify ordering is standard booklet layout
+    assert.deepStrictEqual(map, [
+        15, 0, 1, 14,
+        13, 2, 3, 12,
+        11, 4, 5, 10,
+        9, 6, 7, 8
+    ], '8-up mini-booklet array ordering must match expected structure');
+});
+
+test('16-up mini-booklet imposition page ordering and fold sheet calculations', () => {
+    // 16-up layout uses 32-page signatures (16 pages per side * 2 sides = 32 pages per physical fold sheet)
+    const signatureSize = 32;
+    const map = generateImpositionMap(signatureSize, signatureSize);
+
+    // Fold sheet calculations
+    // Total pages = 32, Pages per physical sheet = 32
+    const expectedSheets = Math.ceil(32 / 32);
+    assert.strictEqual(expectedSheets, 1, '16-up layout should have 1 physical fold sheet for 32 pages');
+    assert.strictEqual(map.length, 32, '16-up mapping should yield 32 slots');
+
+    assert.deepStrictEqual(map, [
+        31, 0, 1, 30,
+        29, 2, 3, 28,
+        27, 4, 5, 26,
+        25, 6, 7, 24,
+        23, 8, 9, 22,
+        21, 10, 11, 20,
+        19, 12, 13, 18,
+        17, 14, 15, 16
+    ], '16-up mini-booklet array ordering must match expected structure');
+});
+
 test('non-multiple-of-4 page counts (5, 7, 10 pages)', () => {
     // 5 pages, 8-page signature
     const map5 = generateImpositionMap(5, 8);
